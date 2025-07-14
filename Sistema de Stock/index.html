@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Stock - Kiosco</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <button class="nav-btn" data-view="ventas">Realizar Ventas</button>
+        <button class="nav-btn" data-view="agregar">Agregar Productos</button>
+        <button class="nav-btn" data-view="stock">Control de Stock</button>
+    </div>
+
+    <header>
+        <span class="menu-btn" onclick="openNav()">&#9776;</span>
+        <h1>Control de Stock - Kiosco</h1>
+    </header>
+
+    <main>
+        <!-- Agregar después de las otras secciones en el <main> -->
+        <section id="ventasSection" class="content-section" style="display: none;">
+            <h2>Realizar Venta</h2>
+            <div class="venta-container">
+                <div class="scanner-section">
+                    <div class="form-group">
+                        <label for="codigoProducto">Escanear Código de Producto:</label>
+                        <input type="text" id="codigoProducto" placeholder="Ingrese o escanee el código..." autofocus>
+                    </div>
+                </div>
+                
+                <div class="venta-actual">
+                    <h3>Venta Actual</h3>
+                    <div class="tabla-container">
+                        <table id="tablaVenta">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Cantidad</th>
+                                    <th>Subtotal</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="venta-total">
+                        <h3>Total: $<span id="totalVenta">0.00</span></h3>
+                        <button id="confirmarVenta" class="btn-primary">Confirmar Venta</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="agregarSection" class="content-section">
+            <h2>Agregar Nuevo Producto</h2>
+            <form id="productoForm">
+                <div class="form-group">
+                    <label for="categoria">Categoría:</label>
+                    <select id="categoria" required>
+                        <!-- Las opciones se cargarán dinámicamente desde la API -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="codigo">Código:</label>
+                    <input type="text" id="codigo" placeholder="Código único del producto" required>
+                </div>
+                <div class="form-group">
+                    <label for="detalle">Detalle:</label>
+                    <textarea id="detalle" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="precio">Precio:</label>
+                    <input type="number" id="precio" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="stock">Cantidad en Stock:</label>
+                    <input type="number" id="stock" required>
+                </div>
+                <button type="submit" class="btn-primary">Agregar Producto</button>
+            </form>
+        </section>
+
+        
+
+        <section id="stockSection" class="content-section" style="display: none;">
+            <h2>Stock Actual</h2>
+            <div class="stock-container">
+                <div id="stock-tables" class="stock-tables">
+                    <!-- Las tablas de categorías se generarán dinámicamente -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal para editar productos -->
+    <div id="modalEditar" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Editar Producto</h2>
+            <form id="editarForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editCategoria">Categoría:</label>
+                    <select id="editCategoria" required>
+                        <!-- Las opciones se cargarán dinámicamente desde la API -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editNombre">Nombre:</label>
+                    <input type="text" id="editNombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCodigo">Código:</label>
+                    <input type="text" id="editCodigo" placeholder="Código único del producto" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDetalle">Detalle:</label>
+                    <textarea id="editDetalle" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editPrecio">Precio:</label>
+                    <input type="number" id="editPrecio" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="editStock">Cantidad en Stock:</label>
+                    <input type="number" id="editStock" required>
+                </div>
+                <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
