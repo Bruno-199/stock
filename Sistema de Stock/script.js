@@ -2,7 +2,7 @@
 const getApiUrl = () => {
     // En producción (detectar si estamos en Render u otro hosting)
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        return 'https://tu-stock-api.onrender.com/api'; // Cambiar por tu URL de Render
+        return 'https://stock-api-n1hg.onrender.com/api';
     }
     // En desarrollo local
     return 'http://localhost:8000/api';

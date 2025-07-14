@@ -51,12 +51,13 @@ git push -u origin main
 
 1. **New → Static Site**
 2. **Connect mismo repo de GitHub**
-3. **Configuración:**
+3. **Configuración CORRECTA:**
    ```
    Name: stock-frontend
+   Branch: main
    Root Directory: Sistema de Stock
-   Build Command: echo "No build needed"
-   Publish Directory: Sistema de Stock
+   Build Command: (dejar vacío o "echo 'No build needed'")
+   Publish Directory: . 
    ```
 
 ### ⚙️ 4. Configurar URLs

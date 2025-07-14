@@ -1,49 +1,48 @@
-# 🚀 DEPLOY SIMPLE - UNA SOLA BASE DE DATOS
+# 🚀 DEPLOY SIMPLE - ¡BACKEND YA FUNCIONANDO!
 
-## ✅ **CONFIGURACIÓN ACTUAL:**
+## ✅ **BACKEND DESPLEGADO:**
 
-Tu archivo `.env` está configurado para usar **Clever Cloud MySQL** tanto en desarrollo como en producción.
+Tu backend está funcionando en: **https://stock-api-n1hg.onrender.com**
 
-## 🔧 **PARA RENDER (PRODUCCIÓN):**
+### � **URLs importantes:**
+- **API Base:** https://stock-api-n1hg.onrender.com/api
+- **Ping:** https://stock-api-n1hg.onrender.com/ping
+- **Productos:** https://stock-api-n1hg.onrender.com/api/productos
+- **Categorías:** https://stock-api-n1hg.onrender.com/api/categorias
 
-En Render Dashboard, configurar **exactamente estas 7 variables**:
+## 🎯 **PRÓXIMO PASO: FRONTEND**
 
-```
-NODE_ENV=production
-PORT=10000
-DATABASE_HOST=bmxmxtdp6u4aorkf4h9y-mysql.services.clever-cloud.com
-DATABASE_PORT=3306
-DATABASE_USER=udw12ldxhzrkmvz5
-DATABASE_PASSWORD=mh2lXow9rpQ2VavbhMul
-DATABASE_NAME=bmxmxtdp6u4aorkf4h9y
-```
+### Opción 1: Netlify (RECOMENDADO)
+1. Ir a [netlify.com](https://netlify.com)
+2. New site from Git → GitHub
+3. Seleccionar tu repo
+4. **Configuración:**
+   ```
+   Build command: echo "No build needed"
+   Publish directory: Sistema de Stock
+   ```
 
-## 📋 **PASOS:**
+### Opción 2: Vercel
+1. Ir a [vercel.com](https://vercel.com)
+2. Import project → GitHub
+3. **Configuración:**
+   ```
+   Framework: Other
+   Root Directory: Sistema de Stock
+   ```
 
-### 1. Subir a GitHub
-```bash
-git init
-git add .
-git commit -m "Sistema Stock"
-git remote add origin https://github.com/TU-USUARIO/sistema-stock.git
-git push -u origin main
-```
+### Opción 3: GitHub Pages
+1. En tu repo → Settings → Pages
+2. Source: Deploy from a branch
+3. Branch: main / Sistema de Stock
 
-### 2. Crear Web Service en Render
-- Ir a [render.com](https://render.com)
-- New → Web Service → Connect GitHub
-- Root Directory: `back`
-- Start Command: `npm start`
+## ✅ **CONFIGURACIÓN ACTUALIZADA:**
 
-### 3. Configurar variables
-Copiar las 6 variables de arriba en Environment Variables
+✅ Frontend configurado para usar tu backend  
+✅ Ping automático cada 5 minutos activado  
+✅ CORS configurado para tu dominio  
+✅ Detección automática local/producción  
 
-### 4. Deploy
-Click "Create Web Service" ¡y listo!
+## 🚀 **¡CASI LISTO!**
 
-## 🎯 **RESULTADO:**
-- **Desarrollo:** Usa Clever Cloud MySQL (datos reales para pruebas)
-- **Producción:** Usa la misma Clever Cloud MySQL
-- **Una sola BD** para todo - más simple y consistente
-
-¡Simple y directo! 🚀
+Solo falta subir el frontend y tendrás tu sistema completo funcionando en la nube!
