@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require("express");
 const cors = require("cors");
+const fetch = require("node-fetch");
 const { conection } = require("./config/db");
 
 // Importación de rutas del sistema de stock
@@ -63,11 +64,37 @@ conection.query('SELECT 1', (err) => {
   console.log("✅ Conectado exitosamente a la base de datos");
 });
 
+// Sistema de auto-ping interno para evitar que Render congele el servicio
+const selfPing = () => {
+  // Solo hacer auto-ping en producción (Render)
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    const pingUrl = `${process.env.RENDER_EXTERNAL_URL}/ping`;
+    
+    fetch(pingUrl)
+      .then(response => response.json())
+      .then(data => {
+        console.log(`💓 Auto-ping exitoso: ${data.timestamp}`);
+      })
+      .catch(error => {
+        console.warn(`⚠️ Error en auto-ping: ${error.message}`);
+      });
+  }
+};
+
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`🚀 Servidor corriendo en el puerto ${port}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 URL: ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`}`);
+  
+  // Configurar auto-ping en producción
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🔄 Iniciando sistema de auto-ping cada 10 minutos...');
+    // Auto-ping cada 10 minutos (600000 ms)
+    setInterval(selfPing, 600000);
+    // Primer auto-ping después de 2 minutos
+    setTimeout(selfPing, 120000);
+  }
 });
 
 // Manejo de errores

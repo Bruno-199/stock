@@ -16,10 +16,16 @@
     font-family: 'Arial', sans-serif;
 }
 
+html {
+    font-size: 16px;
+}
+
 body {
     background-color: var(--color-light);
     color: var(--color-dark);
     line-height: 1.6;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 header {
@@ -27,21 +33,28 @@ header {
     padding: 1rem;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    margin-left: 2rem;
 }
 
 main {
+    width: 100%;
     max-width: 1200px;
-    margin: 2rem auto;
+    margin: 1rem auto;
     padding: 0 1rem;
 }
 
 /* Formularios */
 .formulario-section {
     background-color: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group {
@@ -76,6 +89,7 @@ textarea {
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
+    display: inline-block;
 }
 
 .btn-primary:hover {
@@ -85,7 +99,7 @@ textarea {
 /* Tabla de stock */
 .stock-section {
     background-color: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
@@ -93,7 +107,8 @@ textarea {
 .categoria-tabs {
     margin-bottom: 1rem;
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .tab-btn {
@@ -116,7 +131,7 @@ table {
 }
 
 th, td {
-    padding: 0.75rem;
+    padding: 0.75rem 0.5rem;
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
@@ -206,6 +221,8 @@ th {
     border-radius: 4px;
     cursor: pointer;
     margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+    display: inline-block;
 }
 
 .btn-editar {
@@ -224,7 +241,7 @@ th {
     height: 100%;
     width: 0;
     position: fixed;
-    z-index: 1;
+    z-index: 1001;
     top: 0;
     left: 0;
     background-color: var(--color-dark);
@@ -255,19 +272,23 @@ th {
 }
 
 .menu-btn {
-    font-size: 30px;
+    font-size: 24px;
     cursor: pointer;
     position: absolute;
-    left: 20px;
-    top: 20px;
+    left: 15px;
+    top: 15px;
+    z-index: 100;
 }
 
 /* Stock cards */
 .stock-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1rem;
     padding: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .stock-card {
@@ -285,38 +306,21 @@ th {
 
 .tabla-container {
     overflow-x: auto;
-}
-
-/* Responsive adjustments */
-@media screen and (max-height: 450px) {
-    .sidenav {padding-top: 15px;}
-    .sidenav a {font-size: 18px;}
-}
-
-@media screen and (max-width: 768px) {
-    .stock-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Estilos para las tablas de stock */
-.stock-container {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 100%;
 }
 
 .stock-tables {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    width: 100%;
 }
 
 .table-wrapper {
     background-color: #f8f9fa;
     padding: 1rem;
     border-radius: 8px;
+    width: 100%;
 }
 
 .table-wrapper h3 {
@@ -340,6 +344,7 @@ th {
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 .tabla-container td {
@@ -348,6 +353,165 @@ th {
 
 .tabla-container tr:hover {
     background-color: #f5f5f5;
+}
+
+/* Media queries para responsive design */
+@media screen and (max-width: 1024px) {
+    html {
+        font-size: 15px;
+    }
+    
+    .stock-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media screen and (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+    
+    header h1 {
+        font-size: 1.3rem;
+    }
+    
+    main {
+        margin: 1rem auto;
+        padding: 0 0.8rem;
+    }
+    
+    .formulario-section, .stock-section, .venta-container {
+        padding: 1.2rem;
+    }
+    
+    .stock-container {
+        grid-template-columns: 1fr;
+        padding: 0.8rem;
+    }
+    
+    .modal-content {
+        padding: 1.5rem;
+        margin: 10px auto;
+    }
+    
+    .form-group {
+        margin-bottom: 0.8rem;
+    }
+    
+    input, select, textarea {
+        padding: 0.8rem;
+        font-size: 16px; /* Previene el zoom en iOS */
+    }
+    
+    .venta-total {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .venta-total button {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+    
+    th, td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    html {
+        font-size: 13px;
+    }
+    
+    header h1 {
+        font-size: 1.2rem;
+        margin-left: 1.5rem;
+    }
+    
+    .menu-btn {
+        font-size: 20px;
+        left: 10px;
+        top: 12px;
+    }
+    
+    main {
+        padding: 0 0.5rem;
+    }
+    
+    .formulario-section, .stock-section, .venta-container {
+        padding: 1rem;
+    }
+    
+    .modal-content {
+        padding: 1rem;
+        margin: 5px auto;
+    }
+    
+    .close {
+        right: 0.5rem;
+        top: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.6rem;
+    }
+    
+    .btn-editar, .btn-eliminar {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 0.3rem;
+        text-align: center;
+    }
+    
+    .cantidad-input {
+        width: 50px;
+    }
+    
+    th, td {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.8rem;
+    }
+    
+    .tabla-container {
+        font-size: 0.8rem;
+    }
+    
+    #codigoProducto {
+        font-size: 1rem;
+        padding: 0.6rem;
+    }
+}
+
+/* Para dispositivos muy pequeños */
+@media screen and (max-width: 320px) {
+    html {
+        font-size: 12px;
+    }
+    
+    header h1 {
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary {
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .cantidad-input {
+        width: 40px;
+    }
+}
+
+/* Responsive adjustments for sidenav */
+@media screen and (max-height: 450px) {
+    .sidenav {
+        padding-top: 15px;
+    }
+    
+    .sidenav a {
+        font-size: 18px;
+    }
 }
 .nav-btn {
     background: none;
@@ -374,13 +538,13 @@ th {
 /* Estilos para la sección de ventas */
 .venta-container {
     background-color: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .scanner-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 #codigoProducto {
@@ -398,9 +562,9 @@ th {
 
 .venta-total {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 2rem;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 2px solid #eee;
 }
@@ -411,7 +575,7 @@ th {
 }
 
 .cantidad-input {
-    width: 80px;
+    width: 60px;
     padding: 0.5rem;
     text-align: center;
     border: 1px solid #ddd;
@@ -425,4 +589,5 @@ th {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-size: 0.9rem;
 }

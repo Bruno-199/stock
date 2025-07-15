@@ -20,10 +20,7 @@ const connection = mysql.createPool({
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     ssl: { rejectUnauthorized: false },
-    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
-    acquireTimeout: parseInt(process.env.DB_ACQUIRE_TIMEOUT) || 60000,
-    timeout: parseInt(process.env.DB_TIMEOUT) || 60000,
-    reconnect: true
+    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10
 });
 
 // Validar variables y usar la conexión

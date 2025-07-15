@@ -521,6 +521,34 @@ class VentaManager {
 const productoManager = new ProductoManager();
 const ventaManager = productoManager.ventaManager;
 
+// Configurar la vista inicial (Realizar Ventas)
+const configurarVistaInicial = () => {
+    // Marcar el botón de ventas como activo
+    const ventasBtn = document.querySelector('[data-view="ventas"]');
+    if (ventasBtn) {
+        ventasBtn.classList.add('active');
+    }
+    
+    // Asegurar que se muestre la sección de ventas
+    if (window.productoManager && window.productoManager.mostrarSeccion) {
+        window.productoManager.mostrarSeccion('ventas');
+    }
+    
+    // Foco en el input de códigos para facilitar el uso
+    const codigoInput = document.getElementById('codigoProducto');
+    if (codigoInput) {
+        setTimeout(() => codigoInput.focus(), 100);
+    }
+};
+
+// Ejecutar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', configurarVistaInicial);
+} else {
+    // Si el DOM ya está cargado, ejecutar inmediatamente
+    configurarVistaInicial();
+}
+
 // Exponer al ámbito global
 window.productoManager = productoManager;
 window.ventaManager = ventaManager;
