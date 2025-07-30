@@ -9,7 +9,7 @@
 <body>
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <button class="nav-btn" data-view="ventas">Realizar Ventas</button>
+        <button class="nav-btn active" data-view="ventas">Realizar Ventas</button>
         <button class="nav-btn" data-view="agregar">Agregar Productos</button>
         <button class="nav-btn" data-view="stock">Control de Stock</button>
     </div>
@@ -20,8 +20,8 @@
     </header>
 
     <main>
-        <!-- Agregar después de las otras secciones en el <main> -->
-        <section id="ventasSection" class="content-section" style="display: none;">
+        <!-- Sección de ventas visible por defecto -->
+        <section id="ventasSection" class="content-section" style="display: block;">
             <h2>Realizar Venta</h2>
             <div class="venta-container">
                 <div class="scanner-section">
@@ -55,7 +55,7 @@
             </div>
         </section>
         
-        <section id="agregarSection" class="content-section">
+        <section id="agregarSection" class="content-section" style="display: none;">
             <h2>Agregar Nuevo Producto</h2>
             <form id="productoForm">
                 <div class="form-group">

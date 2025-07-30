@@ -125,6 +125,8 @@ class ProductoManager {
         this.initEventListeners();
         this.cargarDatos();
         this.ventaManager = new VentaManager(this);
+        // Mostrar la sección de ventas por defecto al inicializar
+        this.mostrarSeccion('ventas');
     }
 
     async cargarDatos() {
