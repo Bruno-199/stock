@@ -495,7 +495,7 @@ th {
     
     .venta-total h3 {
         font-size: 1.5rem;
-        padding: 1rem;
+        padding: 1.5rem;
         background-color: var(--color-primary);
         color: white;
         border-radius: 8px;
@@ -896,6 +896,109 @@ th {
     }
 }
 
+/* Estilos para alertas de producto existente */
+.alert {
+    padding: 15px;
+    margin: 15px 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.alert strong {
+    font-weight: bold;
+}
+
+.alert p {
+    margin: 5px 0 0 0;
+    font-size: 14px;
+}
+
+/* Estilos para resultados de búsqueda */
+.search-results {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 2px solid #28a745;
+}
+
+.search-results h3 {
+    color: #28a745;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #dc3545;
+}
+
+.no-results h3 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.no-results p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.categoria-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Destacar código en resultados de búsqueda */
+.search-results td:first-child {
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* Animación para transición de búsqueda */
+.search-results {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.no-results {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive para resultados de búsqueda */
+@media (max-width: 768px) {
+    .search-results .tabla-container {
+        overflow-x: auto;
+    }
+    
+    .categoria-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+}
+
 /* Pantallas muy grandes (más de 1200px) */
 @media screen and (min-width: 1200px) {
     main {
@@ -994,5 +1097,242 @@ th {
         background: linear-gradient(to left, rgba(52, 152, 219, 0.2), transparent);
         pointer-events: none;
         border-radius: 0 8px 8px 0;
+    }
+}
+
+/* Estilos para la paginación */
+.pagination-controls {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-top: 2rem;
+    border: 1px solid #e0e0e0;
+}
+
+.pagination-info {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    color: var(--color-dark);
+    font-weight: 500;
+}
+
+.pagination-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-pagination {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.btn-pagination:hover:not(:disabled) {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+}
+
+.btn-pagination:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.page-number {
+    background-color: #f8f9fa;
+    color: var(--color-dark);
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 35px;
+    text-align: center;
+}
+
+.page-number:hover {
+    background-color: #e9ecef;
+    border-color: var(--color-primary);
+}
+
+.page-number.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    font-weight: 600;
+}
+
+.page-ellipsis {
+    padding: 0.5rem 0.3rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.pagination-summary {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-primary);
+    font-weight: 600;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+/* Responsive para paginación */
+@media screen and (max-width: 768px) {
+    .pagination-controls {
+        padding: 1rem;
+    }
+    
+    .pagination-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .btn-pagination {
+        width: 100%;
+        max-width: 200px;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+    }
+    
+    .pagination-numbers {
+        order: -1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-number {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        min-width: 40px;
+    }
+    
+    .pagination-info {
+        font-size: 0.9rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .pagination-summary {
+        font-size: 1rem;
+        padding: 0.8rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .pagination-numbers {
+        gap: 0.2rem;
+    }
+    
+    .page-number {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 35px;
+    }
+    
+    .btn-pagination {
+        font-size: 0.9rem;
+        padding: 0.7rem 0.8rem;
+    }
+}
+
+/* Estilos para búsqueda rápida */
+.search-container {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.search-input-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-input-container input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.search-input-container input:focus {
+    outline: none;
+    border-color: #0056b3;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.search-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.search-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.search-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Responsive para búsqueda */
+@media (max-width: 768px) {
+    .search-input-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-input-container input {
+        margin-bottom: 0.5rem;
     }
 }
