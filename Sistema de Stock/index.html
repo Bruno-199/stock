@@ -27,7 +27,7 @@
                 <div class="scanner-section">
                     <div class="form-group">
                         <label for="codigoProducto">Escanear Código de Producto:</label>
-                        <input type="text" id="codigoProducto" placeholder="Ingrese o escanee el código..." autofocus>
+                        <input type="text" id="codigoProducto" data-scanner-input="true" placeholder="Ingrese o escanee el código..." autofocus>
                     </div>
                 </div>
                 
@@ -70,7 +70,7 @@
                 </div>
                 <div class="form-group">
                     <label for="codigo">Código:</label>
-                    <input type="text" id="codigo" placeholder="Código único del producto" required>
+                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
                 </div>
                 <div class="form-group">
                     <label for="detalle">Detalle:</label>
@@ -85,6 +85,7 @@
                     <input type="number" id="stock" required>
                 </div>
                 <button type="submit" class="btn-primary">Agregar Producto</button>
+                <button type="button" class="btn-secondary" onclick="productoManager.limpiarFormularioProducto()">Limpiar Formulario</button>
             </form>
         </section>
 
@@ -93,8 +94,37 @@
         <section id="stockSection" class="content-section" style="display: none;">
             <h2>Stock Actual</h2>
             <div class="stock-container">
+                <!-- Búsqueda rápida con código de barras -->
+                <div class="search-container">
+                    <div class="form-group">
+                        <label for="busquedaCodigo">Búsqueda Rápida - Código de Barras:</label>
+                        <div class="search-input-container">
+                            <input type="text" id="busquedaCodigo" data-scanner-input="true" placeholder="Escanee o ingrese el código de barras..." autofocus>
+                            <button id="btnVerTodos" class="btn-secondary">Ver Todos</button>
+                        </div>
+                    </div>
+                    <div id="mensajeBusqueda" class="search-message" style="display: none;"></div>
+                </div>
+                
                 <div id="stock-tables" class="stock-tables">
                     <!-- Las tablas de categorías se generarán dinámicamente -->
+                </div>
+                
+                <!-- Controles de paginación -->
+                <div id="pagination-controls" class="pagination-controls">
+                    <div class="pagination-info">
+                        <span id="pagination-text">Mostrando productos 1 a 50 de 17000</span>
+                    </div>
+                    <div class="pagination-buttons">
+                        <button id="btn-anterior" class="btn-pagination" onclick="productoManager.cambiarPagina(-1)">← Anterior</button>
+                        <div id="pagination-numbers" class="pagination-numbers">
+                            <!-- Los números de página se generarán dinámicamente -->
+                        </div>
+                        <button id="btn-siguiente" class="btn-pagination" onclick="productoManager.cambiarPagina(1)">Siguiente →</button>
+                    </div>
+                    <div class="pagination-summary">
+                        <span id="page-indicator">Página 1 de 340</span>
+                    </div>
                 </div>
             </div>
         </section>
