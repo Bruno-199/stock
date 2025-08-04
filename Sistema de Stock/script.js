@@ -14,6 +14,107 @@ const PING_URL = API_BASE_URL.replace('/api', '/ping');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('📡 Ping URL:', PING_URL);
 
+// ===== SISTEMA DE MENSAJES TOAST =====
+class ToastManager {
+    constructor() {
+        this.container = null;
+        this.toastCounter = 0;
+        this.init();
+    }
+
+    init() {
+        // Crear el contenedor de toast si no existe
+        if (!this.container) {
+            this.container = document.createElement('div');
+            this.container.className = 'toast-container';
+            document.body.appendChild(this.container);
+        }
+    }
+
+    show(message, type = 'info', duration = 4000) {
+        const toast = this.createToast(message, type, duration);
+        this.container.appendChild(toast);
+
+        // Mostrar el toast con animación
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
+        // Auto-ocultar después del tiempo especificado
+        setTimeout(() => {
+            this.hide(toast);
+        }, duration);
+
+        return toast;
+    }
+
+    createToast(message, type, duration) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.id = `toast-${++this.toastCounter}`;
+
+        // Determinar el icono según el tipo
+        const icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || icons.info}</div>
+            <div class="toast-content">${message}</div>
+            <button class="toast-close" onclick="toastManager.hide(this.parentElement)">×</button>
+            <div class="toast-progress"></div>
+        `;
+
+        return toast;
+    }
+
+    hide(toast) {
+        if (!toast || !toast.parentElement) return;
+
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+
+        // Remover del DOM después de la animación
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.parentElement.removeChild(toast);
+            }
+        }, 300);
+    }
+
+    // Métodos de conveniencia para diferentes tipos de mensajes
+    success(message, duration = 4000) {
+        return this.show(message, 'success', duration);
+    }
+
+    error(message, duration = 5000) {
+        return this.show(message, 'error', duration);
+    }
+
+    warning(message, duration = 4500) {
+        return this.show(message, 'warning', duration);
+    }
+
+    info(message, duration = 4000) {
+        return this.show(message, 'info', duration);
+    }
+}
+
+// Crear instancia global del toast manager
+const toastManager = new ToastManager();
+
+// Función global para mostrar mensajes (reemplazo directo de alert)
+function mostrarMensaje(mensaje, tipo = 'info') {
+    return toastManager.show(mensaje, tipo);
+}
+
+// Exponer al ámbito global
+window.toastManager = toastManager;
+window.mostrarMensaje = mostrarMensaje;
+
 // Sistema de ping cada 5 minutos para mantener Render activo
 const keepAlive = () => {
     // Solo hacer ping si no estamos en desarrollo local
@@ -253,7 +354,7 @@ class ProductoManager {
             this.actualizarTablas();
         } catch (error) {
             console.error('Error al cargar datos:', error);
-            alert('Error al conectar con el servidor. Verifica que esté ejecutándose.');
+            toastManager.error('Error al conectar con el servidor. Verifica que esté ejecutándose.');
         }
     }
 
@@ -326,7 +427,7 @@ class ProductoManager {
             // Verificar si el botón está deshabilitado (producto existente)
             const botonAgregar = document.querySelector('#productoForm button[type="submit"]');
             if (botonAgregar && botonAgregar.disabled) {
-                alert('Este producto ya existe en el stock. Use "Limpiar Formulario" para agregar un producto diferente.');
+                toastManager.warning('Este producto ya existe en el stock. Use "Limpiar Formulario" para agregar un producto diferente.');
                 return;
             }
             
@@ -636,10 +737,10 @@ class ProductoManager {
             document.getElementById('productoForm').reset();
             await this.cargarProductos();
             this.actualizarTablas();
-            alert('Producto agregado exitosamente');
+            toastManager.success('Producto agregado exitosamente');
         } catch (error) {
             console.error('Error al agregar producto:', error);
-            alert('Error al agregar producto: ' + error.message);
+            toastManager.error('Error al agregar producto: ' + error.message);
         }
     }
 
@@ -662,10 +763,10 @@ class ProductoManager {
                     this.actualizarTablas();
                 }
                 
-                alert('Producto eliminado exitosamente');
+                toastManager.success('Producto eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
-                alert('Error al eliminar producto: ' + error.message);
+                toastManager.error('Error al eliminar producto: ' + error.message);
             }
         }
     }
@@ -732,10 +833,10 @@ class ProductoManager {
             
             this.actualizarTablas();
             document.getElementById('modalEditar').style.display = 'none';
-            alert('Producto actualizado exitosamente');
+            toastManager.success('Producto actualizado exitosamente');
         } catch (error) {
             console.error('Error al actualizar producto:', error);
-            alert('Error al actualizar producto: ' + error.message);
+            toastManager.error('Error al actualizar producto: ' + error.message);
         }
     }
 
@@ -1052,10 +1153,10 @@ class ProductoManager {
             document.getElementById('productoForm').reset();
             await this.cargarProductos();
             this.actualizarTablas();
-            alert('Producto agregado exitosamente');
+            toastManager.success('Producto agregado exitosamente');
         } catch (error) {
             console.error('Error al agregar producto:', error);
-            alert('Error al agregar producto: ' + error.message);
+            toastManager.error('Error al agregar producto: ' + error.message);
         }
     }
 
@@ -1078,10 +1179,10 @@ class ProductoManager {
                     this.actualizarTablas();
                 }
                 
-                alert('Producto eliminado exitosamente');
+                toastManager.success('Producto eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
-                alert('Error al eliminar producto: ' + error.message);
+                toastManager.error('Error al eliminar producto: ' + error.message);
             }
         }
     }
@@ -1148,10 +1249,10 @@ class ProductoManager {
             
             this.actualizarTablas();
             document.getElementById('modalEditar').style.display = 'none';
-            alert('Producto actualizado exitosamente');
+            toastManager.success('Producto actualizado exitosamente');
         } catch (error) {
             console.error('Error al actualizar producto:', error);
-            alert('Error al actualizar producto: ' + error.message);
+            toastManager.error('Error al actualizar producto: ' + error.message);
         }
     }
 
@@ -1320,11 +1421,11 @@ class VentaManager {
             if (producto.stock_actual > 0) {
                 this.agregarProductoAVenta(producto);
             } else {
-                alert('Producto sin stock disponible');
+                toastManager.warning('Producto sin stock disponible');
             }
         } catch (error) {
             console.error('Error al buscar producto:', error);
-            alert('Producto no encontrado');
+            toastManager.error('Producto no encontrado');
         }
     }
 
@@ -1336,7 +1437,7 @@ class VentaManager {
                 itemExistente.cantidad++;
                 itemExistente.subtotal = itemExistente.cantidad * itemExistente.precio;
             } else {
-                alert('Stock insuficiente');
+                toastManager.warning('Stock insuficiente');
                 return;
             }
         } else {
@@ -1356,7 +1457,7 @@ class VentaManager {
         const producto = this.productoManager.productos.find(p => p.id === id);
         
         if (nuevaCantidad > producto.stock_actual) {
-            alert('Stock insuficiente');
+            toastManager.warning('Stock insuficiente');
             return;
         }
 
@@ -1405,7 +1506,7 @@ class VentaManager {
 
     async confirmarVenta() {
         if (this.ventaActual.length === 0) {
-            alert('No hay productos en la venta actual');
+            toastManager.warning('No hay productos en la venta actual');
             return;
         }
 
@@ -1422,10 +1523,10 @@ class VentaManager {
             await this.productoManager.cargarProductos();
             this.productoManager.actualizarTablas();
 
-            alert('Venta realizada con éxito');
+            toastManager.success('Venta realizada con éxito');
         } catch (error) {
             console.error('Error al procesar venta:', error);
-            alert('Error al procesar venta: ' + error.message);
+            toastManager.error('Error al procesar venta: ' + error.message);
         }
     }
 }
