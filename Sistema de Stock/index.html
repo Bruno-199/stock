@@ -84,8 +84,12 @@
                     <label for="stock">Cantidad en Stock:</label>
                     <input type="number" id="stock" required>
                 </div>
+                <div class="form-group">
+                    <label for="fechaVencimiento">Fecha de Vencimiento:</label>
+                    <input type="date" id="fechaVencimiento">
+                </div>
                 <button type="submit" class="btn-primary">Agregar Producto</button>
-                <button type="button" class="btn-secondary" onclick="productoManager.limpiarFormularioProducto()">Limpiar Formulario</button>
+                <button type="button" class="btn-secondary" onclick="limpiarFormularioProducto()">Limpiar Formulario</button>
             </form>
         </section>
 
@@ -116,11 +120,11 @@
                         <span id="pagination-text">Mostrando productos 1 a 50 de 17000</span>
                     </div>
                     <div class="pagination-buttons">
-                        <button id="btn-anterior" class="btn-pagination" onclick="productoManager.cambiarPagina(-1)">← Anterior</button>
+                        <button id="btn-anterior" class="btn-pagination">← Anterior</button>
                         <div id="pagination-numbers" class="pagination-numbers">
                             <!-- Los números de página se generarán dinámicamente -->
                         </div>
-                        <button id="btn-siguiente" class="btn-pagination" onclick="productoManager.cambiarPagina(1)">Siguiente →</button>
+                        <button id="btn-siguiente" class="btn-pagination">Siguiente →</button>
                     </div>
                     <div class="pagination-summary">
                         <span id="page-indicator">Página 1 de 340</span>
@@ -162,6 +166,10 @@
                 <div class="form-group">
                     <label for="editStock">Cantidad en Stock:</label>
                     <input type="number" id="editStock" required>
+                </div>
+                <div class="form-group">
+                    <label for="editFechaVencimiento">Fecha de Vencimiento:</label>
+                    <input type="date" id="editFechaVencimiento">
                 </div>
                 <button type="submit" class="btn-primary">Guardar Cambios</button>
             </form>
