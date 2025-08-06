@@ -3,13 +3,13 @@ const { conection } = require("../config/db");
 // Obtener todos los productos con información de categoría
 const getProductos = (req, res) => {
     const query = `
-        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo,
+        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento,
                c.nombre as categoria, p.categoria_id,
                COALESCE(SUM(m.cantidad), 0) as stock_actual
         FROM productos p
         LEFT JOIN categorias c ON p.categoria_id = c.id
         LEFT JOIN movimientos_stock m ON p.id = m.producto_id
-        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, c.nombre, p.categoria_id
+        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento, c.nombre, p.categoria_id
         ORDER BY c.nombre, p.nombre
     `;
     
@@ -30,14 +30,14 @@ const getProductosPorCategoria = (req, res) => {
     const { categoria } = req.params;
     
     const query = `
-        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo,
+        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento,
                c.nombre as categoria, p.categoria_id,
                COALESCE(SUM(m.cantidad), 0) as stock_actual
         FROM productos p
         LEFT JOIN categorias c ON p.categoria_id = c.id
         LEFT JOIN movimientos_stock m ON p.id = m.producto_id
         WHERE c.nombre = ?
-        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, c.nombre, p.categoria_id
+        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento, c.nombre, p.categoria_id
         ORDER BY p.nombre
     `;
     
@@ -58,14 +58,14 @@ const getProductoPorId = (req, res) => {
     const { id } = req.params;
     
     const query = `
-        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo,
+        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento,
                c.nombre as categoria, p.categoria_id,
                COALESCE(SUM(m.cantidad), 0) as stock_actual
         FROM productos p
         LEFT JOIN categorias c ON p.categoria_id = c.id
         LEFT JOIN movimientos_stock m ON p.id = m.producto_id
         WHERE p.id = ?
-        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, c.nombre, p.categoria_id
+        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento, c.nombre, p.categoria_id
     `;
     
     conection.query(query, [id], (err, results) => {
@@ -92,14 +92,14 @@ const getProductoPorCodigo = (req, res) => {
     const { codigo } = req.params;
     
     const query = `
-        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo,
+        SELECT p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento,
                c.nombre as categoria, p.categoria_id,
                COALESCE(SUM(m.cantidad), 0) as stock_actual
         FROM productos p
         LEFT JOIN categorias c ON p.categoria_id = c.id
         LEFT JOIN movimientos_stock m ON p.id = m.producto_id
         WHERE p.codigo = ?
-        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, c.nombre, p.categoria_id
+        GROUP BY p.id, p.nombre, p.codigo, p.precio, p.detalle, p.stock_minimo, p.fecha_vencimiento, c.nombre, p.categoria_id
     `;
     
     conection.query(query, [codigo], (err, results) => {
@@ -123,7 +123,7 @@ const getProductoPorCodigo = (req, res) => {
 
 // Crear nuevo producto
 const createProducto = (req, res) => {
-    const { nombre, codigo, categoria_id, precio, detalle, stock_minimo } = req.body;
+    const { nombre, codigo, categoria_id, precio, detalle, stock_minimo, fecha_vencimiento } = req.body;
     
     // Validaciones
     if (!nombre || !precio || !categoria_id) {
@@ -132,9 +132,9 @@ const createProducto = (req, res) => {
         });
     }
     
-    const query = "INSERT INTO productos (nombre, codigo, categoria_id, precio, detalle, stock_minimo) VALUES (?, ?, ?, ?, ?, ?)";
+    const query = "INSERT INTO productos (nombre, codigo, categoria_id, precio, detalle, stock_minimo, fecha_vencimiento) VALUES (?, ?, ?, ?, ?, ?, ?)";
     
-    conection.query(query, [nombre, codigo, categoria_id, precio, detalle || '', stock_minimo || 0], (err, results) => {
+    conection.query(query, [nombre, codigo, categoria_id, precio, detalle || '', stock_minimo || 0, fecha_vencimiento || null], (err, results) => {
         if (err) {
             console.error("Error al crear producto:", err);
             if (err.code === 'ER_DUP_ENTRY') {
@@ -158,7 +158,7 @@ const createProducto = (req, res) => {
 // Actualizar producto
 const updateProducto = (req, res) => {
     const { id } = req.params;
-    const { nombre, codigo, categoria_id, precio, detalle, stock_minimo } = req.body;
+    const { nombre, codigo, categoria_id, precio, detalle, stock_minimo, fecha_vencimiento } = req.body;
     
     // Validaciones
     if (!nombre || !precio || !categoria_id) {
@@ -167,9 +167,9 @@ const updateProducto = (req, res) => {
         });
     }
     
-    const query = "UPDATE productos SET nombre = ?, codigo = ?, categoria_id = ?, precio = ?, detalle = ?, stock_minimo = ? WHERE id = ?";
+    const query = "UPDATE productos SET nombre = ?, codigo = ?, categoria_id = ?, precio = ?, detalle = ?, stock_minimo = ?, fecha_vencimiento = ? WHERE id = ?";
     
-    conection.query(query, [nombre, codigo, categoria_id, precio, detalle || '', stock_minimo || 0, id], (err, results) => {
+    conection.query(query, [nombre, codigo, categoria_id, precio, detalle || '', stock_minimo || 0, fecha_vencimiento || null, id], (err, results) => {
         if (err) {
             console.error("Error al actualizar producto:", err);
             if (err.code === 'ER_DUP_ENTRY') {

@@ -641,6 +641,7 @@ class ProductoManager {
         document.getElementById('detalle').value = producto.detalle;
         document.getElementById('precio').value = producto.precio;
         document.getElementById('stock').value = producto.stock_actual || 0;
+        document.getElementById('fechaVencimiento').value = producto.fecha_vencimiento || '';
     }
 
     // Función para mostrar mensaje de producto existente
@@ -715,7 +716,8 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('categoria').value),
                 precio: parseFloat(document.getElementById('precio').value),
                 detalle: document.getElementById('detalle').value,
-                stock_minimo: 0
+                stock_minimo: 0,
+                fecha_vencimiento: document.getElementById('fechaVencimiento').value || null
             };
 
             await api.post('/productos', producto);
@@ -781,6 +783,7 @@ class ProductoManager {
             document.getElementById('editDetalle').value = producto.detalle;
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
+            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
             document.getElementById('modalEditar').style.display = 'block';
         }
     }
@@ -794,7 +797,8 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('editCategoria').value),
                 precio: parseFloat(document.getElementById('editPrecio').value),
                 detalle: document.getElementById('editDetalle').value,
-                stock_minimo: 0
+                stock_minimo: 0,
+                fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null
             };
 
             await api.put(`/productos/${id}`, producto);
@@ -891,6 +895,7 @@ class ProductoManager {
                                 <th>Detalle</th>
                                 <th>Precio</th>
                                 <th>Stock</th>
+                                <th>Vencimiento</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -903,6 +908,7 @@ class ProductoManager {
                                     <td>${p.detalle}</td>
                                     <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                     <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
                                     <td>
                                         <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                         <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
@@ -944,6 +950,7 @@ class ProductoManager {
                             <th>Detalle</th>
                             <th>Precio</th>
                             <th>Stock</th>
+                            <th>Vencimiento</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -955,6 +962,7 @@ class ProductoManager {
                                 <td>${p.detalle}</td>
                                 <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                 <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
                                 <td>
                                     <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                     <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
@@ -997,6 +1005,7 @@ class ProductoManager {
                                 <th>Detalle</th>
                                 <th>Precio</th>
                                 <th>Stock</th>
+                                <th>Vencimiento</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -1009,6 +1018,7 @@ class ProductoManager {
                                     <td>${p.detalle}</td>
                                     <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                     <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
                                     <td>
                                         <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                         <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
@@ -1050,6 +1060,7 @@ class ProductoManager {
                             <th>Detalle</th>
                             <th>Precio</th>
                             <th>Stock</th>
+                            <th>Vencimiento</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -1061,6 +1072,7 @@ class ProductoManager {
                                 <td>${p.detalle}</td>
                                 <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                 <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
                                 <td>
                                     <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                     <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
@@ -1131,7 +1143,8 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('categoria').value),
                 precio: parseFloat(document.getElementById('precio').value),
                 detalle: document.getElementById('detalle').value,
-                stock_minimo: 0
+                stock_minimo: 0,
+                fecha_vencimiento: document.getElementById('fechaVencimiento').value || null
             };
 
             await api.post('/productos', producto);
@@ -1197,6 +1210,7 @@ class ProductoManager {
             document.getElementById('editDetalle').value = producto.detalle;
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
+            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
             document.getElementById('modalEditar').style.display = 'block';
         }
     }
@@ -1210,6 +1224,7 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('editCategoria').value),
                 precio: parseFloat(document.getElementById('editPrecio').value),
                 detalle: document.getElementById('editDetalle').value,
+                fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null,
                 stock_minimo: 0
             };
 
