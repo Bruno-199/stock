@@ -155,11 +155,16 @@ const api = {
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`);
             if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
+                const errorText = await response.text();
+                throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
             }
             return await response.json();
         } catch (error) {
             console.error('Error en GET:', error);
+            // Mejorar el manejo de errores de conexión
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Error de conexión. Verifique que el servidor esté funcionando.');
+            }
             throw error;
         }
     },
@@ -340,6 +345,8 @@ class ProductoManager {
         this.productosPorPagina = 50;
         this.productosFiltrados = []; // Para almacenar resultados de búsqueda
         this.modosBusqueda = false; // Para saber si estamos en modo búsqueda
+        this.searchTimeout = null; // Para debounce en búsqueda
+        this.lastLoadTime = null; // Para cache simple
         this.initEventListeners();
         this.cargarDatos();
         this.ventaManager = new VentaManager(this);
@@ -387,9 +394,35 @@ class ProductoManager {
 
     async cargarProductos() {
         try {
+            // Mostrar indicador de carga si la sección de stock está visible
+            const stockSection = document.getElementById('stockSection');
+            if (stockSection && stockSection.style.display !== 'none') {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading-productos';
+                loadingDiv.className = 'loading-message';
+                loadingDiv.innerHTML = '⏳ Cargando productos...';
+                
+                const stockTables = document.getElementById('stock-tables');
+                if (stockTables) {
+                    stockTables.prepend(loadingDiv);
+                }
+            }
+            
             this.productos = await api.get('/productos');
+            this.lastLoadTime = Date.now();
+            
+            // Remover indicador de carga
+            const loadingDiv = document.getElementById('loading-productos');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
         } catch (error) {
             console.error('Error al cargar productos:', error);
+            // Remover indicador de carga en caso de error
+            const loadingDiv = document.getElementById('loading-productos');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
         }
     }
 
@@ -484,6 +517,22 @@ class ProductoManager {
         if (btnVerTodos) {
             btnVerTodos.addEventListener('click', () => {
                 this.limpiarBusqueda();
+            });
+        }
+
+        // Botones de paginación
+        const btnAnterior = document.getElementById('btn-anterior');
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        
+        if (btnAnterior) {
+            btnAnterior.addEventListener('click', () => {
+                this.cambiarPagina(-1);
+            });
+        }
+        
+        if (btnSiguiente) {
+            btnSiguiente.addEventListener('click', () => {
+                this.cambiarPagina(1);
             });
         }
     }
@@ -710,47 +759,99 @@ class ProductoManager {
 
     async agregarProducto() {
         try {
+            // Validaciones mejoradas
+            const codigo = document.getElementById('codigo').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const precio = parseFloat(document.getElementById('precio').value);
+            const stock = parseInt(document.getElementById('stock').value);
+            
+            if (!codigo || !nombre) {
+                toastManager.error('El código y nombre son obligatorios');
+                return;
+            }
+            
+            if (precio <= 0) {
+                toastManager.error('El precio debe ser mayor a 0');
+                return;
+            }
+            
+            if (stock < 0) {
+                toastManager.error('El stock no puede ser negativo');
+                return;
+            }
+            
+            // Mostrar loading state
+            const submitButton = document.querySelector('#productoForm button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Agregando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const producto = {
-                nombre: document.getElementById('nombre').value,
-                codigo: document.getElementById('codigo').value,
+                nombre: nombre,
+                codigo: codigo,
                 categoria_id: parseInt(document.getElementById('categoria').value),
-                precio: parseFloat(document.getElementById('precio').value),
-                detalle: document.getElementById('detalle').value,
+                precio: precio,
+                detalle: document.getElementById('detalle').value.trim(),
                 stock_minimo: 0,
                 fecha_vencimiento: document.getElementById('fechaVencimiento').value || null
             };
 
-            await api.post('/productos', producto);
+            // Crear el producto y obtener la respuesta con el ID
+            const responseProducto = await api.post('/productos', producto);
+            const productoId = responseProducto.id || responseProducto.producto?.id;
             
-            // Registrar stock inicial
+            // Registrar stock inicial si es necesario
             const stockInicial = parseInt(document.getElementById('stock').value);
-            if (stockInicial > 0) {
-                // Primero obtener el producto recién creado para obtener su ID
-                await this.cargarProductos();
-                const productoCreado = this.productos.find(p => p.codigo === producto.codigo);
-                if (productoCreado) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: productoCreado.id,
-                        cantidad: stockInicial
-                    });
-                }
+            if (stockInicial > 0 && productoId) {
+                await api.post('/movimientos/entrada', {
+                    producto_id: productoId,
+                    cantidad: stockInicial
+                });
             }
 
+            // Limpiar formulario inmediatamente para mejor UX
             document.getElementById('productoForm').reset();
-            await this.cargarProductos();
-            this.actualizarTablas();
             toastManager.success('Producto agregado exitosamente');
+            
+            // Recargar datos en segundo plano (una sola vez)
+            this.cargarProductos().then(() => {
+                this.actualizarTablas();
+            }).catch(error => {
+                console.warn('Error al actualizar tabla después de agregar producto:', error);
+            });
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al agregar producto:', error);
             toastManager.error('Error al agregar producto: ' + error.message);
+            
+            // Restaurar botón en caso de error
+            const submitButton = document.querySelector('#productoForm button[type="submit"]');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Agregar Producto';
+            submitButton.style.cursor = '';
         }
     }
 
     async eliminarProducto(id) {
-        if (confirm('¿Está seguro de que desea eliminar este producto?')) {
+        const producto = this.productos.find(p => p.id === id);
+        const nombreProducto = producto ? producto.nombre : 'este producto';
+        
+        if (confirm(`¿Está seguro de que desea eliminar "${nombreProducto}"?\n\nEsta acción no se puede deshacer.`)) {
             try {
+                // Eliminar del servidor
                 await api.delete(`/productos/${id}`);
-                await this.cargarProductos();
+                
+                // Mostrar mensaje de éxito inmediatamente
+                toastManager.success(`Producto "${nombreProducto}" eliminado exitosamente`);
+                
+                // Eliminar localmente para UX inmediato
+                this.productos = this.productos.filter(p => p.id !== id);
                 
                 // Si estamos en modo búsqueda, actualizar los productos filtrados
                 if (this.modosBusqueda) {
@@ -765,10 +866,16 @@ class ProductoManager {
                     this.actualizarTablas();
                 }
                 
-                toastManager.success('Producto eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
                 toastManager.error('Error al eliminar producto: ' + error.message);
+                
+                // En caso de error, recargar datos para sincronizar
+                this.cargarProductos().then(() => {
+                    this.actualizarTablas();
+                }).catch(err => {
+                    console.warn('Error al recargar datos después del error:', err);
+                });
             }
         }
     }
@@ -783,13 +890,34 @@ class ProductoManager {
             document.getElementById('editDetalle').value = producto.detalle;
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
-            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
+            
+            // Formatear fecha para el input de tipo date (YYYY-MM-DD)
+            let fechaFormateada = '';
+            if (producto.fecha_vencimiento) {
+                try {
+                    const fecha = new Date(producto.fecha_vencimiento);
+                    if (!isNaN(fecha.getTime())) {
+                        fechaFormateada = fecha.toISOString().split('T')[0];
+                    }
+                } catch (error) {
+                    console.warn('Error al formatear fecha de vencimiento:', error);
+                }
+            }
+            document.getElementById('editFechaVencimiento').value = fechaFormateada;
+            
             document.getElementById('modalEditar').style.display = 'block';
         }
     }
 
     async guardarEdicion() {
         try {
+            // Mostrar loading state
+            const submitButton = document.querySelector('#editarForm button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Guardando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const id = parseInt(document.getElementById('editId').value);
             const producto = {
                 nombre: document.getElementById('editNombre').value,
@@ -801,6 +929,7 @@ class ProductoManager {
                 fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null
             };
 
+            // Actualizar producto en el servidor
             await api.put(`/productos/${id}`, producto);
             
             // Actualizar stock si es necesario
@@ -822,452 +951,54 @@ class ProductoManager {
                 }
             }
 
-            await this.cargarProductos();
+            // Actualizar localmente para UX inmediato
+            const productoLocal = this.productos.find(p => p.id === id);
+            if (productoLocal) {
+                Object.assign(productoLocal, {
+                    ...producto,
+                    stock_actual: nuevoStock
+                });
+            }
             
             // Si estamos en modo búsqueda, actualizar el producto en los filtrados
             if (this.modosBusqueda) {
-                const productoActualizado = this.productos.find(p => p.id === id);
-                if (productoActualizado) {
-                    const index = this.productosFiltrados.findIndex(p => p.id === id);
-                    if (index !== -1) {
-                        this.productosFiltrados[index] = productoActualizado;
-                    }
+                const index = this.productosFiltrados.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    Object.assign(this.productosFiltrados[index], {
+                        ...producto,
+                        stock_actual: nuevoStock
+                    });
                 }
             }
             
-            this.actualizarTablas();
+            // Cerrar modal y mostrar mensaje inmediatamente
             document.getElementById('modalEditar').style.display = 'none';
             toastManager.success('Producto actualizado exitosamente');
+            
+            // Actualizar tabla inmediatamente
+            this.actualizarTablas();
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al actualizar producto:', error);
             toastManager.error('Error al actualizar producto: ' + error.message);
-        }
-    }
-
-    actualizarTablas() {
-        // Determinar qué productos usar (todos o filtrados)
-        const productosAUsar = this.modosBusqueda ? this.productosFiltrados : this.productos;
-        const totalProductos = productosAUsar.length;
-        const totalPaginas = Math.ceil(totalProductos / this.productosPorPagina);
-        
-        // Calcular el rango de productos para la página actual
-        const inicio = (this.paginaActual - 1) * this.productosPorPagina;
-        const fin = inicio + this.productosPorPagina;
-        const productosPagina = productosAUsar.slice(inicio, fin);
-        
-        // Actualizar controles de paginación (ocultar si estamos en modo búsqueda con un solo producto)
-        if (this.modosBusqueda && totalProductos === 1) {
-            document.getElementById('pagination-controls').style.display = 'none';
-        } else {
-            document.getElementById('pagination-controls').style.display = 'block';
-            this.actualizarControlesPaginacion(totalProductos, totalPaginas, inicio, fin);
-        }
-        
-        // Si estamos en modo búsqueda, mostrar solo una tabla unificada
-        if (this.modosBusqueda) {
-            this.renderizarTablaBusqueda(productosPagina);
-        } else {
-            // Modo normal: agrupar por categorías
-            this.renderizarTablasPorCategoria(productosPagina);
-        }
-    }
-
-    // Nueva función para renderizar tabla de búsqueda
-    renderizarTablaBusqueda(productos) {
-        const stockTablesContainer = document.getElementById('stock-tables');
-        if (!stockTablesContainer) return;
-
-        if (productos.length === 0) {
-            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
-            return;
-        }
-
-        const tabla = `
-            <div class="search-results">
-                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Categoría</th>
-                                <th>Detalle</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Vencimiento</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productos.map(p => `
-                                <tr>
-                                    <td><strong>${p.codigo}</strong></td>
-                                    <td>${p.nombre}</td>
-                                    <td><span class="categoria-badge">${p.categoria}</span></td>
-                                    <td>${p.detalle}</td>
-                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
-                                    <td>
-                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        stockTablesContainer.innerHTML = tabla;
-    }
-
-    // Nueva función para renderizar tablas por categoría (modo normal)
-    renderizarTablasPorCategoria(productosPagina) {
-        // Agrupar productos de la página actual por categoría
-        const productosPorCategoria = {};
-        this.categorias.forEach(categoria => {
-            productosPorCategoria[categoria.nombre] = [];
-        });
-        
-        productosPagina.forEach(producto => {
-            if (productosPorCategoria[producto.categoria]) {
-                productosPorCategoria[producto.categoria].push(producto);
-            }
-        });
-        
-        // Renderizar las tablas solo con los productos de la página actual
-        this.categorias.forEach(categoria => {
-            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
-            const tabla = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Detalle</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Vencimiento</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productosFiltrados.map(p => `
-                            <tr>
-                                <td>${p.codigo}</td>
-                                <td>${p.nombre}</td>
-                                <td>${p.detalle}</td>
-                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
-                                <td>
-                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            // Buscar el elemento por el nombre de la categoría
-            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
-            if (tablaElement) {
-                tablaElement.innerHTML = 
-                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
-            }
-        });
-    }
-
-    // Nueva función para renderizar tabla de búsqueda
-    renderizarTablaBusqueda(productos) {
-        const stockTablesContainer = document.getElementById('stock-tables');
-        if (!stockTablesContainer) return;
-
-        if (productos.length === 0) {
-            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
-            return;
-        }
-
-        const tabla = `
-            <div class="search-results">
-                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Categoría</th>
-                                <th>Detalle</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Vencimiento</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productos.map(p => `
-                                <tr>
-                                    <td><strong>${p.codigo}</strong></td>
-                                    <td>${p.nombre}</td>
-                                    <td><span class="categoria-badge">${p.categoria}</span></td>
-                                    <td>${p.detalle}</td>
-                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
-                                    <td>
-                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        stockTablesContainer.innerHTML = tabla;
-    }
-
-    // Nueva función para renderizar tablas por categoría (modo normal)
-    renderizarTablasPorCategoria(productosPagina) {
-        // Agrupar productos de la página actual por categoría
-        const productosPorCategoria = {};
-        this.categorias.forEach(categoria => {
-            productosPorCategoria[categoria.nombre] = [];
-        });
-        
-        productosPagina.forEach(producto => {
-            if (productosPorCategoria[producto.categoria]) {
-                productosPorCategoria[producto.categoria].push(producto);
-            }
-        });
-        
-        // Renderizar las tablas solo con los productos de la página actual
-        this.categorias.forEach(categoria => {
-            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
-            const tabla = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Detalle</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Vencimiento</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productosFiltrados.map(p => `
-                            <tr>
-                                <td>${p.codigo}</td>
-                                <td>${p.nombre}</td>
-                                <td>${p.detalle}</td>
-                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
-                                <td>
-                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            // Buscar el elemento por el nombre de la categoría
-            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
-            if (tablaElement) {
-                tablaElement.innerHTML = 
-                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
-            }
-        });
-    }
-
-    // Función para limpiar la búsqueda y mostrar todos los productos
-    limpiarBusqueda() {
-        this.productosFiltrados = [];
-        this.modosBusqueda = false;
-        this.paginaActual = 1;
-        this.ocultarMensajeBusqueda();
-        document.getElementById('busquedaCodigo').value = '';
-        
-        // Restaurar la estructura de categorías antes de actualizar tablas
-        this.generarSeccionesCategorias();
-        this.actualizarTablas();
-        
-        // Enfocar el input de búsqueda
-        setTimeout(() => {
-            document.getElementById('busquedaCodigo').focus();
-        }, 100);
-    }
-
-    // Función para mostrar mensajes de búsqueda
-    mostrarMensajeBusqueda(mensaje, tipo) {
-        const mensajeDiv = document.getElementById('mensajeBusqueda');
-        if (mensajeDiv) {
-            mensajeDiv.textContent = mensaje;
-            mensajeDiv.className = `search-message ${tipo}`;
-            mensajeDiv.style.display = 'block';
             
-            // Ocultar el mensaje después de 3 segundos si es de éxito
-            if (tipo === 'success') {
-                setTimeout(() => {
-                    this.ocultarMensajeBusqueda();
-                }, 3000);
-            }
-        }
-    }
-
-    // Función para ocultar mensajes de búsqueda
-    ocultarMensajeBusqueda() {
-        const mensajeDiv = document.getElementById('mensajeBusqueda');
-        if (mensajeDiv) {
-            mensajeDiv.style.display = 'none';
-        }
-    }
-
-    async agregarProducto() {
-        try {
-            const producto = {
-                nombre: document.getElementById('nombre').value,
-                codigo: document.getElementById('codigo').value,
-                categoria_id: parseInt(document.getElementById('categoria').value),
-                precio: parseFloat(document.getElementById('precio').value),
-                detalle: document.getElementById('detalle').value,
-                stock_minimo: 0,
-                fecha_vencimiento: document.getElementById('fechaVencimiento').value || null
-            };
-
-            await api.post('/productos', producto);
+            // En caso de error, recargar datos para sincronizar
+            this.cargarProductos().then(() => {
+                this.actualizarTablas();
+            }).catch(err => {
+                console.warn('Error al recargar datos después del error:', err);
+            });
             
-            // Registrar stock inicial
-            const stockInicial = parseInt(document.getElementById('stock').value);
-            if (stockInicial > 0) {
-                // Primero obtener el producto recién creado para obtener su ID
-                await this.cargarProductos();
-                const productoCreado = this.productos.find(p => p.codigo === producto.codigo);
-                if (productoCreado) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: productoCreado.id,
-                        cantidad: stockInicial
-                    });
-                }
-            }
-
-            document.getElementById('productoForm').reset();
-            await this.cargarProductos();
-            this.actualizarTablas();
-            toastManager.success('Producto agregado exitosamente');
-        } catch (error) {
-            console.error('Error al agregar producto:', error);
-            toastManager.error('Error al agregar producto: ' + error.message);
-        }
-    }
-
-    async eliminarProducto(id) {
-        if (confirm('¿Está seguro de que desea eliminar este producto?')) {
-            try {
-                await api.delete(`/productos/${id}`);
-                await this.cargarProductos();
-                
-                // Si estamos en modo búsqueda, actualizar los productos filtrados
-                if (this.modosBusqueda) {
-                    this.productosFiltrados = this.productosFiltrados.filter(p => p.id !== id);
-                    if (this.productosFiltrados.length === 0) {
-                        // Si no quedan productos filtrados, volver al modo normal
-                        this.limpiarBusqueda();
-                    } else {
-                        this.actualizarTablas();
-                    }
-                } else {
-                    this.actualizarTablas();
-                }
-                
-                toastManager.success('Producto eliminado exitosamente');
-            } catch (error) {
-                console.error('Error al eliminar producto:', error);
-                toastManager.error('Error al eliminar producto: ' + error.message);
-            }
-        }
-    }
-
-    abrirEditar(id) {
-        const producto = this.productos.find(p => p.id === id);
-        if (producto) {
-            document.getElementById('editId').value = producto.id;
-            document.getElementById('editCategoria').value = producto.categoria_id;
-            document.getElementById('editNombre').value = producto.nombre;
-            document.getElementById('editCodigo').value = producto.codigo;
-            document.getElementById('editDetalle').value = producto.detalle;
-            document.getElementById('editPrecio').value = producto.precio;
-            document.getElementById('editStock').value = producto.stock_actual;
-            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
-            document.getElementById('modalEditar').style.display = 'block';
-        }
-    }
-
-    async guardarEdicion() {
-        try {
-            const id = parseInt(document.getElementById('editId').value);
-            const producto = {
-                nombre: document.getElementById('editNombre').value,
-                codigo: document.getElementById('editCodigo').value,
-                categoria_id: parseInt(document.getElementById('editCategoria').value),
-                precio: parseFloat(document.getElementById('editPrecio').value),
-                detalle: document.getElementById('editDetalle').value,
-                fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null,
-                stock_minimo: 0
-            };
-
-            await api.put(`/productos/${id}`, producto);
-            
-            // Actualizar stock si es necesario
-            const stockActual = this.productos.find(p => p.id === id)?.stock_actual || 0;
-            const nuevoStock = parseInt(document.getElementById('editStock').value);
-            
-            if (nuevoStock !== stockActual) {
-                const diferencia = nuevoStock - stockActual;
-                if (diferencia > 0) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: id,
-                        cantidad: diferencia
-                    });
-                } else if (diferencia < 0) {
-                    await api.post('/movimientos/salida', {
-                        producto_id: id,
-                        cantidad: Math.abs(diferencia)
-                    });
-                }
-            }
-
-            await this.cargarProductos();
-            
-            // Si estamos en modo búsqueda, actualizar el producto en los filtrados
-            if (this.modosBusqueda) {
-                const productoActualizado = this.productos.find(p => p.id === id);
-                if (productoActualizado) {
-                    const index = this.productosFiltrados.findIndex(p => p.id === id);
-                    if (index !== -1) {
-                        this.productosFiltrados[index] = productoActualizado;
-                    }
-                }
-            }
-            
-            this.actualizarTablas();
-            document.getElementById('modalEditar').style.display = 'none';
-            toastManager.success('Producto actualizado exitosamente');
-        } catch (error) {
-            console.error('Error al actualizar producto:', error);
-            toastManager.error('Error al actualizar producto: ' + error.message);
+            // Restaurar botón en caso de error
+            const submitButton = document.querySelector('#editarForm button[type="submit"]');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Guardar Cambios';
+            submitButton.style.cursor = '';
         }
     }
 
@@ -1396,6 +1127,116 @@ class ProductoManager {
             // Scroll suave hacia arriba
             document.getElementById('stockSection').scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    // Nueva función para renderizar tabla de búsqueda
+    renderizarTablaBusqueda(productos) {
+        const stockTablesContainer = document.getElementById('stock-tables');
+        if (!stockTablesContainer) return;
+
+        if (productos.length === 0) {
+            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
+            return;
+        }
+
+        const tabla = `
+            <div class="search-results">
+                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
+                <div class="tabla-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Detalle</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Vencimiento</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productos.map(p => `
+                                <tr>
+                                    <td><strong>${p.codigo}</strong></td>
+                                    <td>${p.nombre}</td>
+                                    <td><span class="categoria-badge">${p.categoria}</span></td>
+                                    <td>${p.detalle}</td>
+                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
+                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                    <td>
+                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
+                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        stockTablesContainer.innerHTML = tabla;
+    }
+
+    // Nueva función para renderizar tablas por categoría (modo normal)
+    renderizarTablasPorCategoria(productosPagina) {
+        // Agrupar productos de la página actual por categoría
+        const productosPorCategoria = {};
+        this.categorias.forEach(categoria => {
+            productosPorCategoria[categoria.nombre] = [];
+        });
+        
+        productosPagina.forEach(producto => {
+            if (productosPorCategoria[producto.categoria]) {
+                productosPorCategoria[producto.categoria].push(producto);
+            }
+        });
+        
+        // Renderizar las tablas solo con los productos de la página actual
+        this.categorias.forEach(categoria => {
+            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
+            const tabla = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Detalle</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Vencimiento</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productosFiltrados.map(p => `
+                            <tr>
+                                <td>${p.codigo}</td>
+                                <td>${p.nombre}</td>
+                                <td>${p.detalle}</td>
+                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
+                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                <td>
+                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
+                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Buscar el elemento por el nombre de la categoría
+            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
+            if (tablaElement) {
+                tablaElement.innerHTML = 
+                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
+            }
+        });
     }
 }
 
@@ -1526,30 +1367,76 @@ class VentaManager {
         }
 
         try {
+            // Mostrar loading state
+            const submitButton = document.getElementById('confirmarVenta');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Procesando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const productos = this.ventaActual.map(item => ({
                 producto_id: item.id,
                 cantidad: item.cantidad
             }));
 
+            // Procesar la venta en el servidor
             await api.post('/ventas', { productos });
 
+            // Actualizar stock local inmediatamente para UX más rápido
+            this.ventaActual.forEach(item => {
+                const producto = this.productoManager.productos.find(p => p.id === item.id);
+                if (producto) {
+                    producto.stock_actual = Math.max(0, producto.stock_actual - item.cantidad);
+                }
+                
+                // Si estamos en modo búsqueda, también actualizar el producto filtrado
+                if (this.productoManager.modosBusqueda) {
+                    const productoFiltrado = this.productoManager.productosFiltrados.find(p => p.id === item.id);
+                    if (productoFiltrado) {
+                        productoFiltrado.stock_actual = Math.max(0, productoFiltrado.stock_actual - item.cantidad);
+                    }
+                }
+            });
+
+            // Limpiar la venta actual y mostrar mensaje inmediatamente
             this.ventaActual = [];
             this.actualizarTablaVenta();
-            await this.productoManager.cargarProductos();
-            this.productoManager.actualizarTablas();
-
             toastManager.success('Venta realizada con éxito');
+
+            // Actualizar tablas inmediatamente con los datos locales actualizados
+            this.productoManager.actualizarTablas();
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al procesar venta:', error);
             toastManager.error('Error al procesar venta: ' + error.message);
+            
+            // En caso de error, recargar datos para sincronizar
+            this.productoManager.cargarProductos().then(() => {
+                this.productoManager.actualizarTablas();
+            }).catch(err => {
+                console.warn('Error al recargar datos después del error:', err);
+            });
+            
+            // Restaurar botón en caso de error
+            const submitButton = document.getElementById('confirmarVenta');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Confirmar Venta';
+            submitButton.style.cursor = '';
         }
     }
 }
 
 // Inicialización
 const productoManager = new ProductoManager();
-const ventaManager = productoManager.ventaManager;
 
 // Exponer al ámbito global
 window.productoManager = productoManager;
-window.ventaManager = ventaManager;
+window.ventaManager = productoManager.ventaManager;
+
+// Funciones globales para compatibilidad con HTML onclick
+window.limpiarFormularioProducto = () => productoManager.limpiarFormularioProducto();
