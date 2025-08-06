@@ -14,6 +14,206 @@ const PING_URL = API_BASE_URL.replace('/api', '/ping');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('📡 Ping URL:', PING_URL);
 
+// ===== SISTEMA DE VALIDACIONES PARA FORMULARIO =====
+class FormValidator {
+    constructor() {
+        this.codigoIngresado = false; // Flag para controlar si ya se ingresó código
+        this.editCodigoOriginal = ''; // Para almacenar el código original en edición
+    }
+
+    // Validar campo nombre - bloquear códigos de barras accidentales
+    validarNombre(valor, isEdit = false) {
+        const mensajeId = isEdit ? 'mensajeEditNombre' : 'mensajeNombre';
+        const inputId = isEdit ? 'editNombre' : 'nombre';
+        const mensajeDiv = document.getElementById(mensajeId);
+        const inputNombre = document.getElementById(inputId);
+        
+        // Verificar si es puramente numérico con más de 10 caracteres
+        const esPuramenteNumerico = /^\d+$/.test(valor);
+        const esMuyLargo = valor.length > 13;
+        const esCodigoBarras = esPuramenteNumerico && valor.length >= 10;
+        
+        if (esCodigoBarras) {
+            this.mostrarMensajeValidacion(mensajeDiv, 'No se permite ingresar códigos de barras en el nombre del producto', 'error');
+            this.marcarCampo(inputNombre, 'error');
+            return false;
+        }
+        
+        if (valor.trim().length === 0) {
+            this.mostrarMensajeValidacion(mensajeDiv, 'El nombre del producto es obligatorio', 'error');
+            this.marcarCampo(inputNombre, 'error');
+            return false;
+        }
+        
+        this.ocultarMensajeValidacion(mensajeDiv);
+        this.marcarCampo(inputNombre, 'success');
+        return true;
+    }
+
+    // Validar campo código - permitir ingreso una sola vez
+    validarCodigo(valor, isEdit = false) {
+        const mensajeId = isEdit ? 'mensajeEditCodigo' : 'mensajeCodigo';
+        const inputId = isEdit ? 'editCodigo' : 'codigo';
+        const mensajeDiv = document.getElementById(mensajeId);
+        const inputCodigo = document.getElementById(inputId);
+        
+        if (valor.trim().length === 0) {
+            this.mostrarMensajeValidacion(mensajeDiv, 'El código del producto es obligatorio', 'error');
+            this.marcarCampo(inputCodigo, 'error');
+            return false;
+        }
+        
+        // Solo aplicar la lógica de bloqueo en el formulario principal (no en edición)
+        if (!isEdit) {
+            // Si ya se ingresó un código válido, deshabilitar el campo
+            if (this.codigoIngresado && valor.trim().length > 0) {
+                inputCodigo.disabled = true;
+                this.mostrarMensajeValidacion(mensajeDiv, 'Código ingresado y validado. Use "Limpiar Formulario" para cambiar.', 'success');
+                this.marcarCampo(inputCodigo, 'success');
+                return true;
+            }
+        } else {
+            // En modo edición, permitir cambios pero validar que no esté vacío
+            this.mostrarMensajeValidacion(mensajeDiv, 'Código válido', 'success');
+        }
+        
+        this.ocultarMensajeValidacion(mensajeDiv);
+        this.marcarCampo(inputCodigo, 'success');
+        return true;
+    }
+
+    // Validar campo detalle - solo contenido/presentación
+    validarDetalle(valor, isEdit = false) {
+        const mensajeId = isEdit ? 'mensajeEditDetalle' : 'mensajeDetalle';
+        const inputId = isEdit ? 'editDetalle' : 'detalle';
+        const mensajeDiv = document.getElementById(mensajeId);
+        const inputDetalle = document.getElementById(inputId);
+        
+        if (valor.trim().length === 0) {
+            this.mostrarMensajeValidacion(mensajeDiv, 'El detalle del producto es obligatorio', 'error');
+            this.marcarCampo(inputDetalle, 'error');
+            return false;
+        }
+        
+        // Patrón para validar formato: número + unidad de medida
+        const patronDetalle = /^\d+(\.\d+)?\s*(g|kg|ml|l|un|unidades?|piezas?|pack|caja|sobre|bolsa)$/i;
+        
+        if (!patronDetalle.test(valor.trim())) {
+            this.mostrarMensajeValidacion(mensajeDiv, 'Formato inválido. Use: cantidad + unidad (ej: "500 g", "1 L", "12 un")', 'error');
+            this.marcarCampo(inputDetalle, 'error');
+            return false;
+        }
+        
+        this.ocultarMensajeValidacion(mensajeDiv);
+        this.marcarCampo(inputDetalle, 'success');
+        return true;
+    }
+
+    // Marcar código como ingresado y deshabilitar campo
+    marcarCodigoIngresado() {
+        this.codigoIngresado = true;
+        const inputCodigo = document.getElementById('codigo');
+        const mensajeDiv = document.getElementById('mensajeCodigo');
+        
+        if (inputCodigo && inputCodigo.value.trim()) {
+            inputCodigo.disabled = true;
+            this.mostrarMensajeValidacion(mensajeDiv, 'Código validado y bloqueado para evitar duplicaciones', 'success');
+            this.marcarCampo(inputCodigo, 'success');
+        }
+    }
+
+    // Resetear validaciones
+    resetearValidaciones() {
+        this.codigoIngresado = false;
+        this.editCodigoOriginal = '';
+        
+        // Limpiar todos los mensajes de validación
+        ['mensajeNombre', 'mensajeCodigo', 'mensajeDetalle'].forEach(id => {
+            const div = document.getElementById(id);
+            if (div) this.ocultarMensajeValidacion(div);
+        });
+        
+        // Limpiar estilos de todos los campos
+        ['nombre', 'codigo', 'detalle'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.disabled = false;
+                this.marcarCampo(input, 'normal');
+            }
+        });
+    }
+
+    // Validar todo el formulario antes del envío
+    validarFormularioCompleto() {
+        const nombre = document.getElementById('nombre').value;
+        const codigo = document.getElementById('codigo').value;
+        const detalle = document.getElementById('detalle').value;
+        
+        const nombreValido = this.validarNombre(nombre);
+        const codigoValido = this.validarCodigo(codigo);
+        const detalleValido = this.validarDetalle(detalle);
+        
+        return nombreValido && codigoValido && detalleValido;
+    }
+
+    // Validar todo el formulario de edición antes del envío
+    validarFormularioEditCompleto() {
+        const nombre = document.getElementById('editNombre').value;
+        const codigo = document.getElementById('editCodigo').value;
+        const detalle = document.getElementById('editDetalle').value;
+        
+        const nombreValido = this.validarNombre(nombre, true);
+        const codigoValido = this.validarCodigo(codigo, true);
+        const detalleValido = this.validarDetalle(detalle, true);
+        
+        return nombreValido && codigoValido && detalleValido;
+    }
+
+    // Resetear validaciones del modal de edición
+    resetearValidacionesEdit() {
+        // Limpiar todos los mensajes de validación del modal
+        ['mensajeEditNombre', 'mensajeEditCodigo', 'mensajeEditDetalle'].forEach(id => {
+            const div = document.getElementById(id);
+            if (div) this.ocultarMensajeValidacion(div);
+        });
+        
+        // Limpiar estilos de todos los campos del modal
+        ['editNombre', 'editCodigo', 'editDetalle'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                this.marcarCampo(input, 'normal');
+            }
+        });
+    }
+
+    // Funciones auxiliares para mostrar mensajes
+    mostrarMensajeValidacion(div, mensaje, tipo) {
+        if (div) {
+            div.textContent = mensaje;
+            div.className = `validation-message ${tipo}`;
+            div.style.display = 'block';
+        }
+    }
+
+    ocultarMensajeValidacion(div) {
+        if (div) {
+            div.style.display = 'none';
+        }
+    }
+
+    marcarCampo(input, estado) {
+        if (input) {
+            input.classList.remove('error', 'success');
+            if (estado !== 'normal') {
+                input.classList.add(estado);
+            }
+        }
+    }
+}
+
+// Crear instancia global del validador
+const formValidator = new FormValidator();
+
 // ===== SISTEMA DE MENSAJES TOAST =====
 class ToastManager {
     constructor() {
@@ -336,15 +536,19 @@ class ProductoManager {
     constructor() {
         this.productos = [];
         this.categorias = [];
+        this.productosFiltrados = [];
+        this.modosBusqueda = false;
         this.paginaActual = 1;
         this.productosPorPagina = 50;
-        this.productosFiltrados = []; // Para almacenar resultados de búsqueda
-        this.modosBusqueda = false; // Para saber si estamos en modo búsqueda
-        this.initEventListeners();
-        this.cargarDatos();
         this.ventaManager = new VentaManager(this);
-        // Mostrar la sección de ventas por defecto al inicializar
-        this.mostrarSeccion('ventas');
+        this.init();
+    }
+
+    async init() {
+        await this.cargarCategorias();
+        await this.cargarProductos();
+        this.initEventListeners();
+        this.actualizarTablas();
     }
 
     async cargarDatos() {
@@ -431,18 +635,38 @@ class ProductoManager {
                 return;
             }
             
+            // Validar formulario antes de enviar
+            if (!formValidator.validarFormularioCompleto()) {
+                toastManager.error('Por favor corrija los errores en el formulario antes de continuar');
+                return;
+            }
+            
             this.agregarProducto();
         });
+
+        // Event listeners para validación en tiempo real
+        this.setupValidacionTiempoReal();
 
         // Formulario para editar productos
         document.getElementById('editarForm').addEventListener('submit', (e) => {
             e.preventDefault();
+            
+            // Validar formulario de edición antes de enviar
+            if (!formValidator.validarFormularioEditCompleto()) {
+                toastManager.error('Por favor corrija los errores en el formulario antes de continuar');
+                return;
+            }
+            
             this.guardarEdicion();
         });
+
+        // Event listeners para validación en tiempo real del modal de edición
+        this.setupValidacionTiempoRealEdit();
 
         // Cerrar modal
         document.querySelector('.close').addEventListener('click', () => {
             document.getElementById('modalEditar').style.display = 'none';
+            formValidator.resetearValidacionesEdit(); // Limpiar validaciones al cerrar
         });
 
         // Configurar scanner para búsqueda en stock
@@ -468,13 +692,34 @@ class ProductoManager {
             scannerManager.setupScannerInput(inputCodigo, 'add-product', (codigo, input) => {
                 // Verificar si el producto ya existe y autocompletar
                 this.verificarYAutocompletarProducto(codigo);
+                // Marcar código como ingresado después de la validación
+                setTimeout(() => {
+                    if (formValidator.validarCodigo(codigo)) {
+                        formValidator.marcarCodigoIngresado();
+                    }
+                }, 100);
             });
 
             // Mantener compatibilidad con Enter manual para el campo código
             inputCodigo.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    this.verificarYAutocompletarProducto(inputCodigo.value.trim());
+                    const codigo = inputCodigo.value.trim();
+                    this.verificarYAutocompletarProducto(codigo);
+                    // Marcar código como ingresado después de la validación
+                    setTimeout(() => {
+                        if (formValidator.validarCodigo(codigo)) {
+                            formValidator.marcarCodigoIngresado();
+                        }
+                    }, 100);
+                }
+            });
+
+            // Validación cuando pierde el foco
+            inputCodigo.addEventListener('blur', (e) => {
+                const codigo = inputCodigo.value.trim();
+                if (codigo && formValidator.validarCodigo(codigo)) {
+                    formValidator.marcarCodigoIngresado();
                 }
             });
         }
@@ -639,6 +884,7 @@ class ProductoManager {
         document.getElementById('nombre').value = producto.nombre;
         document.getElementById('categoria').value = producto.categoria_id;
         document.getElementById('detalle').value = producto.detalle;
+        document.getElementById('fechaVencimiento').value = producto.fecha_vencimiento || '';
         document.getElementById('precio').value = producto.precio;
         document.getElementById('stock').value = producto.stock_actual || 0;
     }
@@ -697,6 +943,7 @@ class ProductoManager {
     // Función para limpiar el formulario (bonus)
     limpiarFormularioProducto() {
         document.getElementById('productoForm').reset();
+        formValidator.resetearValidaciones(); // Resetear todas las validaciones
         this.habilitarBotonAgregar();
         this.ocultarMensajeProductoExistente();
         
@@ -704,6 +951,52 @@ class ProductoManager {
         const primerCampo = document.getElementById('categoria');
         if (primerCampo) {
             primerCampo.focus();
+        }
+    }
+
+    // Nueva función para configurar validación en tiempo real
+    setupValidacionTiempoReal() {
+        // Validación del nombre
+        const inputNombre = document.getElementById('nombre');
+        if (inputNombre) {
+            inputNombre.addEventListener('input', (e) => {
+                formValidator.validarNombre(e.target.value);
+            });
+        }
+
+        // Validación del detalle
+        const inputDetalle = document.getElementById('detalle');
+        if (inputDetalle) {
+            inputDetalle.addEventListener('input', (e) => {
+                formValidator.validarDetalle(e.target.value);
+            });
+        }
+    }
+
+    // Nueva función para configurar validación en tiempo real del modal de edición
+    setupValidacionTiempoRealEdit() {
+        // Validación del nombre en edición
+        const inputEditNombre = document.getElementById('editNombre');
+        if (inputEditNombre) {
+            inputEditNombre.addEventListener('input', (e) => {
+                formValidator.validarNombre(e.target.value, true);
+            });
+        }
+
+        // Validación del código en edición
+        const inputEditCodigo = document.getElementById('editCodigo');
+        if (inputEditCodigo) {
+            inputEditCodigo.addEventListener('input', (e) => {
+                formValidator.validarCodigo(e.target.value, true);
+            });
+        }
+
+        // Validación del detalle en edición
+        const inputEditDetalle = document.getElementById('editDetalle');
+        if (inputEditDetalle) {
+            inputEditDetalle.addEventListener('input', (e) => {
+                formValidator.validarDetalle(e.target.value, true);
+            });
         }
     }
 
@@ -715,6 +1008,7 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('categoria').value),
                 precio: parseFloat(document.getElementById('precio').value),
                 detalle: document.getElementById('detalle').value,
+                fecha_vencimiento: document.getElementById('fechaVencimiento').value,
                 stock_minimo: 0
             };
 
@@ -735,6 +1029,7 @@ class ProductoManager {
             }
 
             document.getElementById('productoForm').reset();
+            formValidator.resetearValidaciones(); // Resetear validaciones
             await this.cargarProductos();
             this.actualizarTablas();
             toastManager.success('Producto agregado exitosamente');
@@ -774,14 +1069,20 @@ class ProductoManager {
     abrirEditar(id) {
         const producto = this.productos.find(p => p.id === id);
         if (producto) {
+            // Resetear validaciones antes de abrir el modal
+            formValidator.resetearValidacionesEdit();
             document.getElementById('editId').value = producto.id;
             document.getElementById('editCategoria').value = producto.categoria_id;
             document.getElementById('editNombre').value = producto.nombre;
             document.getElementById('editCodigo').value = producto.codigo;
             document.getElementById('editDetalle').value = producto.detalle;
+            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
             document.getElementById('modalEditar').style.display = 'block';
+            
+            // Almacenar el código original para referencia
+            formValidator.editCodigoOriginal = producto.codigo;
         }
     }
 
@@ -794,6 +1095,7 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('editCategoria').value),
                 precio: parseFloat(document.getElementById('editPrecio').value),
                 detalle: document.getElementById('editDetalle').value,
+                fecha_vencimiento: document.getElementById('editFechaVencimiento').value,
                 stock_minimo: 0
             };
 
@@ -1538,3 +1840,4 @@ const ventaManager = productoManager.ventaManager;
 // Exponer al ámbito global
 window.productoManager = productoManager;
 window.ventaManager = ventaManager;
+window.formValidator = formValidator;
