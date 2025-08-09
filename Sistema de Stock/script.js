@@ -1425,7 +1425,7 @@ class VentaManager {
             // Restaurar botón en caso de error
             const submitButton = document.getElementById('confirmarVenta');
             submitButton.disabled = false;
-            submitButton.textContent = 'Confirmar Venta';
+            submitButton.textContent = originalText;
             submitButton.style.cursor = '';
         }
     }
