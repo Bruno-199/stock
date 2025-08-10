@@ -215,20 +215,18 @@ const procesarVenta = (req, res) => {
     };
     
     verificarStock()
-        .then(() => {
-            // Procesar todas las salidas
-            const insertPromises = productos.map(item => {
+        .then(async () => {
+            // Procesar todas las salidas SECUENCIALMENTE para evitar múltiples conexiones
+            for (const item of productos) {
                 const { producto_id, cantidad } = item;
-                return new Promise((resolve, reject) => {
+                await new Promise((resolve, reject) => {
                     const insertQuery = "INSERT INTO movimientos_stock (producto_id, cantidad) VALUES (?, ?)";
                     conection.query(insertQuery, [producto_id, -Math.abs(cantidad)], (err, results) => {
                         if (err) reject(err);
                         else resolve(results);
                     });
                 });
-            });
-            
-            return Promise.all(insertPromises);
+            }
         })
         .then(() => {
             res.json({
