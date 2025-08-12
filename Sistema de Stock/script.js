@@ -14,6 +14,85 @@ const PING_URL = API_BASE_URL.replace('/api', '/ping');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('📡 Ping URL:', PING_URL);
 
+// ===== FUNCIÓN PARA FORMATEAR FECHAS EN FORMATO ARGENTINO =====
+function formatearFechaArgentina(fechaStr) {
+    if (!fechaStr) return 'Sin Fecha';
+    
+    try {
+        let fecha;
+        
+        // Si ya es un objeto Date
+        if (fechaStr instanceof Date) {
+            fecha = fechaStr;
+        }
+        // Si viene en formato YYYY-MM-DD
+        else if (typeof fechaStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+            const partes = fechaStr.split('-'); // [aaaa, mm, dd]
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        // Si viene como string de fecha/timestamp, convertir con hora local
+        else if (typeof fechaStr === 'string') {
+            // Agregar T00:00:00 si no tiene hora para evitar problemas de zona horaria
+            const fechaConHora = fechaStr.includes('T') ? fechaStr : fechaStr + 'T00:00:00';
+            fecha = new Date(fechaConHora);
+        }
+        // Otros casos
+        else {
+            fecha = new Date(fechaStr);
+        }
+        
+        // Verificar que la fecha sea válida
+        if (isNaN(fecha.getTime())) {
+            return 'Fecha Inválida';
+        }
+        
+        // Formatear a DD/MM/YYYY
+        const dd = String(fecha.getDate()).padStart(2, '0');
+        const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+        const yyyy = fecha.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+        
+    } catch (error) {
+        console.warn('Error al formatear fecha:', error, 'Fecha recibida:', fechaStr);
+        return 'Fecha Inválida';
+    }
+}
+
+// ===== FUNCIÓN PARA CONVERTIR FECHA ARGENTINA A FORMATO YYYY-MM-DD =====
+function convertirFechaArgentinaAISO(fechaArg) {
+    if (!fechaArg || fechaArg.trim() === '') return null;
+    
+    try {
+        // Verificar formato DD/MM/YYYY
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(fechaArg)) {
+            return null;
+        }
+        
+        const partes = fechaArg.split('/'); // [dd, mm, yyyy]
+        if (partes.length !== 3) return null;
+        
+        const dia = parseInt(partes[0]);
+        const mes = parseInt(partes[1]);
+        const año = parseInt(partes[2]);
+        
+        // Validaciones básicas
+        if (dia < 1 || dia > 31 || mes < 1 || mes > 12 || año < 1900 || año > 9999) {
+            return null;
+        }
+        
+        // Convertir a formato YYYY-MM-DD
+        const dd = String(dia).padStart(2, '0');
+        const mm = String(mes).padStart(2, '0');
+        const yyyy = String(año);
+        
+        return `${yyyy}-${mm}-${dd}`;
+        
+    } catch (error) {
+        console.warn('Error al convertir fecha argentina:', error);
+        return null;
+    }
+}
+
 // ===== SISTEMA DE MENSAJES TOAST =====
 class ToastManager {
     constructor() {
@@ -890,17 +969,14 @@ class ProductoManager {
             document.getElementById('editDetalle').value = producto.detalle;
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
-            
-            // Formatear fecha para el input de tipo date (YYYY-MM-DD)
+
+            // Formatear fecha para mostrar en formato argentino DD/MM/YYYY
             let fechaFormateada = '';
             if (producto.fecha_vencimiento) {
-                try {
-                    const fecha = new Date(producto.fecha_vencimiento);
-                    if (!isNaN(fecha.getTime())) {
-                        fechaFormateada = fecha.toISOString().split('T')[0];
-                    }
-                } catch (error) {
-                    console.warn('Error al formatear fecha de vencimiento:', error);
+                fechaFormateada = formatearFechaArgentina(producto.fecha_vencimiento);
+                // Si el resultado es 'Sin Fecha' o 'Fecha Inválida', dejar vacío
+                if (fechaFormateada === 'Sin Fecha' || fechaFormateada === 'Fecha Inválida') {
+                    fechaFormateada = '';
                 }
             }
             document.getElementById('editFechaVencimiento').value = fechaFormateada;
@@ -919,6 +995,11 @@ class ProductoManager {
             submitButton.style.cursor = 'not-allowed';
             
             const id = parseInt(document.getElementById('editId').value);
+            
+            // Convertir fecha de formato argentino (DD/MM/YYYY) a ISO (YYYY-MM-DD)
+            const fechaArgentina = document.getElementById('editFechaVencimiento').value;
+            const fechaISO = convertirFechaArgentinaAISO(fechaArgentina);
+            
             const producto = {
                 nombre: document.getElementById('editNombre').value,
                 codigo: document.getElementById('editCodigo').value,
@@ -926,7 +1007,7 @@ class ProductoManager {
                 precio: parseFloat(document.getElementById('editPrecio').value),
                 detalle: document.getElementById('editDetalle').value,
                 stock_minimo: 0,
-                fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null
+                fecha_vencimiento: fechaISO
             };
 
             // Actualizar producto en el servidor
@@ -1165,7 +1246,7 @@ class ProductoManager {
                                     <td>${p.detalle}</td>
                                     <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                     <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                    <td>${formatearFechaArgentina(p.fecha_vencimiento)}</td>
                                     <td>
                                         <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                         <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
@@ -1219,7 +1300,7 @@ class ProductoManager {
                                 <td>${p.detalle}</td>
                                 <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
                                 <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                <td>${formatearFechaArgentina(p.fecha_vencimiento)}</td>
                                 <td>
                                     <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
                                     <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
