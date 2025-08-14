@@ -14,206 +14,6 @@ const PING_URL = API_BASE_URL.replace('/api', '/ping');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('📡 Ping URL:', PING_URL);
 
-// ===== SISTEMA DE VALIDACIONES PARA FORMULARIO =====
-class FormValidator {
-    constructor() {
-        this.codigoIngresado = false; // Flag para controlar si ya se ingresó código
-        this.editCodigoOriginal = ''; // Para almacenar el código original en edición
-    }
-
-    // Validar campo nombre - bloquear códigos de barras accidentales
-    validarNombre(valor, isEdit = false) {
-        const mensajeId = isEdit ? 'mensajeEditNombre' : 'mensajeNombre';
-        const inputId = isEdit ? 'editNombre' : 'nombre';
-        const mensajeDiv = document.getElementById(mensajeId);
-        const inputNombre = document.getElementById(inputId);
-        
-        // Verificar si es puramente numérico con más de 10 caracteres
-        const esPuramenteNumerico = /^\d+$/.test(valor);
-        const esMuyLargo = valor.length > 13;
-        const esCodigoBarras = esPuramenteNumerico && valor.length >= 10;
-        
-        if (esCodigoBarras) {
-            this.mostrarMensajeValidacion(mensajeDiv, 'No se permite ingresar códigos de barras en el nombre del producto', 'error');
-            this.marcarCampo(inputNombre, 'error');
-            return false;
-        }
-        
-        if (valor.trim().length === 0) {
-            this.mostrarMensajeValidacion(mensajeDiv, 'El nombre del producto es obligatorio', 'error');
-            this.marcarCampo(inputNombre, 'error');
-            return false;
-        }
-        
-        this.ocultarMensajeValidacion(mensajeDiv);
-        this.marcarCampo(inputNombre, 'success');
-        return true;
-    }
-
-    // Validar campo código - permitir ingreso una sola vez
-    validarCodigo(valor, isEdit = false) {
-        const mensajeId = isEdit ? 'mensajeEditCodigo' : 'mensajeCodigo';
-        const inputId = isEdit ? 'editCodigo' : 'codigo';
-        const mensajeDiv = document.getElementById(mensajeId);
-        const inputCodigo = document.getElementById(inputId);
-        
-        if (valor.trim().length === 0) {
-            this.mostrarMensajeValidacion(mensajeDiv, 'El código del producto es obligatorio', 'error');
-            this.marcarCampo(inputCodigo, 'error');
-            return false;
-        }
-        
-        // Solo aplicar la lógica de bloqueo en el formulario principal (no en edición)
-        if (!isEdit) {
-            // Si ya se ingresó un código válido, deshabilitar el campo
-            if (this.codigoIngresado && valor.trim().length > 0) {
-                inputCodigo.disabled = true;
-                this.mostrarMensajeValidacion(mensajeDiv, 'Código ingresado y validado. Use "Limpiar Formulario" para cambiar.', 'success');
-                this.marcarCampo(inputCodigo, 'success');
-                return true;
-            }
-        } else {
-            // En modo edición, permitir cambios pero validar que no esté vacío
-            this.mostrarMensajeValidacion(mensajeDiv, 'Código válido', 'success');
-        }
-        
-        this.ocultarMensajeValidacion(mensajeDiv);
-        this.marcarCampo(inputCodigo, 'success');
-        return true;
-    }
-
-    // Validar campo detalle - solo contenido/presentación
-    validarDetalle(valor, isEdit = false) {
-        const mensajeId = isEdit ? 'mensajeEditDetalle' : 'mensajeDetalle';
-        const inputId = isEdit ? 'editDetalle' : 'detalle';
-        const mensajeDiv = document.getElementById(mensajeId);
-        const inputDetalle = document.getElementById(inputId);
-        
-        if (valor.trim().length === 0) {
-            this.mostrarMensajeValidacion(mensajeDiv, 'El detalle del producto es obligatorio', 'error');
-            this.marcarCampo(inputDetalle, 'error');
-            return false;
-        }
-        
-        // Patrón para validar formato: número + unidad de medida
-        const patronDetalle = /^\d+(\.\d+)?\s*(g|kg|ml|l|un|unidades?|piezas?|pack|caja|sobre|bolsa)$/i;
-        
-        if (!patronDetalle.test(valor.trim())) {
-            this.mostrarMensajeValidacion(mensajeDiv, 'Formato inválido. Use: cantidad + unidad (ej: "500 g", "1 L", "12 un")', 'error');
-            this.marcarCampo(inputDetalle, 'error');
-            return false;
-        }
-        
-        this.ocultarMensajeValidacion(mensajeDiv);
-        this.marcarCampo(inputDetalle, 'success');
-        return true;
-    }
-
-    // Marcar código como ingresado y deshabilitar campo
-    marcarCodigoIngresado() {
-        this.codigoIngresado = true;
-        const inputCodigo = document.getElementById('codigo');
-        const mensajeDiv = document.getElementById('mensajeCodigo');
-        
-        if (inputCodigo && inputCodigo.value.trim()) {
-            inputCodigo.disabled = true;
-            this.mostrarMensajeValidacion(mensajeDiv, 'Código validado y bloqueado para evitar duplicaciones', 'success');
-            this.marcarCampo(inputCodigo, 'success');
-        }
-    }
-
-    // Resetear validaciones
-    resetearValidaciones() {
-        this.codigoIngresado = false;
-        this.editCodigoOriginal = '';
-        
-        // Limpiar todos los mensajes de validación
-        ['mensajeNombre', 'mensajeCodigo', 'mensajeDetalle'].forEach(id => {
-            const div = document.getElementById(id);
-            if (div) this.ocultarMensajeValidacion(div);
-        });
-        
-        // Limpiar estilos de todos los campos
-        ['nombre', 'codigo', 'detalle'].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.disabled = false;
-                this.marcarCampo(input, 'normal');
-            }
-        });
-    }
-
-    // Validar todo el formulario antes del envío
-    validarFormularioCompleto() {
-        const nombre = document.getElementById('nombre').value;
-        const codigo = document.getElementById('codigo').value;
-        const detalle = document.getElementById('detalle').value;
-        
-        const nombreValido = this.validarNombre(nombre);
-        const codigoValido = this.validarCodigo(codigo);
-        const detalleValido = this.validarDetalle(detalle);
-        
-        return nombreValido && codigoValido && detalleValido;
-    }
-
-    // Validar todo el formulario de edición antes del envío
-    validarFormularioEditCompleto() {
-        const nombre = document.getElementById('editNombre').value;
-        const codigo = document.getElementById('editCodigo').value;
-        const detalle = document.getElementById('editDetalle').value;
-        
-        const nombreValido = this.validarNombre(nombre, true);
-        const codigoValido = this.validarCodigo(codigo, true);
-        const detalleValido = this.validarDetalle(detalle, true);
-        
-        return nombreValido && codigoValido && detalleValido;
-    }
-
-    // Resetear validaciones del modal de edición
-    resetearValidacionesEdit() {
-        // Limpiar todos los mensajes de validación del modal
-        ['mensajeEditNombre', 'mensajeEditCodigo', 'mensajeEditDetalle'].forEach(id => {
-            const div = document.getElementById(id);
-            if (div) this.ocultarMensajeValidacion(div);
-        });
-        
-        // Limpiar estilos de todos los campos del modal
-        ['editNombre', 'editCodigo', 'editDetalle'].forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                this.marcarCampo(input, 'normal');
-            }
-        });
-    }
-
-    // Funciones auxiliares para mostrar mensajes
-    mostrarMensajeValidacion(div, mensaje, tipo) {
-        if (div) {
-            div.textContent = mensaje;
-            div.className = `validation-message ${tipo}`;
-            div.style.display = 'block';
-        }
-    }
-
-    ocultarMensajeValidacion(div) {
-        if (div) {
-            div.style.display = 'none';
-        }
-    }
-
-    marcarCampo(input, estado) {
-        if (input) {
-            input.classList.remove('error', 'success');
-            if (estado !== 'normal') {
-                input.classList.add(estado);
-            }
-        }
-    }
-}
-
-// Crear instancia global del validador
-const formValidator = new FormValidator();
-
 // ===== SISTEMA DE MENSAJES TOAST =====
 class ToastManager {
     constructor() {
@@ -355,11 +155,16 @@ const api = {
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`);
             if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
+                const errorText = await response.text();
+                throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
             }
             return await response.json();
         } catch (error) {
             console.error('Error en GET:', error);
+            // Mejorar el manejo de errores de conexión
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Error de conexión. Verifique que el servidor esté funcionando.');
+            }
             throw error;
         }
     },
@@ -536,19 +341,17 @@ class ProductoManager {
     constructor() {
         this.productos = [];
         this.categorias = [];
-        this.productosFiltrados = [];
-        this.modosBusqueda = false;
         this.paginaActual = 1;
         this.productosPorPagina = 50;
-        this.ventaManager = new VentaManager(this);
-        this.init();
-    }
-
-    async init() {
-        await this.cargarCategorias();
-        await this.cargarProductos();
+        this.productosFiltrados = []; // Para almacenar resultados de búsqueda
+        this.modosBusqueda = false; // Para saber si estamos en modo búsqueda
+        this.searchTimeout = null; // Para debounce en búsqueda
+        this.lastLoadTime = null; // Para cache simple
         this.initEventListeners();
-        this.actualizarTablas();
+        this.cargarDatos();
+        this.ventaManager = new VentaManager(this);
+        // Mostrar la sección de ventas por defecto al inicializar
+        this.mostrarSeccion('ventas');
     }
 
     async cargarDatos() {
@@ -591,9 +394,35 @@ class ProductoManager {
 
     async cargarProductos() {
         try {
+            // Mostrar indicador de carga si la sección de stock está visible
+            const stockSection = document.getElementById('stockSection');
+            if (stockSection && stockSection.style.display !== 'none') {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading-productos';
+                loadingDiv.className = 'loading-message';
+                loadingDiv.innerHTML = '⏳ Cargando productos...';
+                
+                const stockTables = document.getElementById('stock-tables');
+                if (stockTables) {
+                    stockTables.prepend(loadingDiv);
+                }
+            }
+            
             this.productos = await api.get('/productos');
+            this.lastLoadTime = Date.now();
+            
+            // Remover indicador de carga
+            const loadingDiv = document.getElementById('loading-productos');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
         } catch (error) {
             console.error('Error al cargar productos:', error);
+            // Remover indicador de carga en caso de error
+            const loadingDiv = document.getElementById('loading-productos');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
         }
     }
 
@@ -635,39 +464,21 @@ class ProductoManager {
                 return;
             }
             
-            // Validar formulario antes de enviar
-            if (!formValidator.validarFormularioCompleto()) {
-                toastManager.error('Por favor corrija los errores en el formulario antes de continuar');
-                return;
-            }
-            
             this.agregarProducto();
         });
-
-        // Event listeners para validación en tiempo real
-        this.setupValidacionTiempoReal();
 
         // Formulario para editar productos
         document.getElementById('editarForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            
-            // Validar formulario de edición antes de enviar
-            if (!formValidator.validarFormularioEditCompleto()) {
-                toastManager.error('Por favor corrija los errores en el formulario antes de continuar');
-                return;
-            }
-            
             this.guardarEdicion();
         });
-
-        // Event listeners para validación en tiempo real del modal de edición
-        this.setupValidacionTiempoRealEdit();
 
         // Cerrar modal
         document.querySelector('.close').addEventListener('click', () => {
             document.getElementById('modalEditar').style.display = 'none';
-            formValidator.resetearValidacionesEdit(); // Limpiar validaciones al cerrar
         });
+
+
 
         // Configurar scanner para búsqueda en stock
         const inputBusqueda = document.getElementById('busquedaCodigo');
@@ -692,34 +503,30 @@ class ProductoManager {
             scannerManager.setupScannerInput(inputCodigo, 'add-product', (codigo, input) => {
                 // Verificar si el producto ya existe y autocompletar
                 this.verificarYAutocompletarProducto(codigo);
-                // Marcar código como ingresado después de la validación
-                setTimeout(() => {
-                    if (formValidator.validarCodigo(codigo)) {
-                        formValidator.marcarCodigoIngresado();
-                    }
-                }, 100);
             });
 
             // Mantener compatibilidad con Enter manual para el campo código
             inputCodigo.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    const codigo = inputCodigo.value.trim();
-                    this.verificarYAutocompletarProducto(codigo);
-                    // Marcar código como ingresado después de la validación
-                    setTimeout(() => {
-                        if (formValidator.validarCodigo(codigo)) {
-                            formValidator.marcarCodigoIngresado();
-                        }
-                    }, 100);
+                    this.verificarYAutocompletarProducto(inputCodigo.value.trim());
                 }
             });
+            
+            // También verificar cuando el usuario sale del campo (blur)
+            inputCodigo.addEventListener('blur', () => {
+                this.verificarYAutocompletarProducto(inputCodigo.value.trim());
+            });
+        }
 
-            // Validación cuando pierde el foco
-            inputCodigo.addEventListener('blur', (e) => {
-                const codigo = inputCodigo.value.trim();
-                if (codigo && formValidator.validarCodigo(codigo)) {
-                    formValidator.marcarCodigoIngresado();
+        // Event listener para el botón de editar producto
+        const btnEditarProducto = document.getElementById('btnEditarProducto');
+        if (btnEditarProducto) {
+            btnEditarProducto.addEventListener('click', () => {
+                const codigo = document.getElementById('codigo').value.trim();
+                const producto = this.productos.find(p => p.codigo === codigo);
+                if (producto) {
+                    this.abrirEditar(producto.id);
                 }
             });
         }
@@ -729,6 +536,22 @@ class ProductoManager {
         if (btnVerTodos) {
             btnVerTodos.addEventListener('click', () => {
                 this.limpiarBusqueda();
+            });
+        }
+
+        // Botones de paginación
+        const btnAnterior = document.getElementById('btn-anterior');
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        
+        if (btnAnterior) {
+            btnAnterior.addEventListener('click', () => {
+                this.cambiarPagina(-1);
+            });
+        }
+        
+        if (btnSiguiente) {
+            btnSiguiente.addEventListener('click', () => {
+                this.cambiarPagina(1);
             });
         }
     }
@@ -884,9 +707,34 @@ class ProductoManager {
         document.getElementById('nombre').value = producto.nombre;
         document.getElementById('categoria').value = producto.categoria_id;
         document.getElementById('detalle').value = producto.detalle;
-        document.getElementById('fechaVencimiento').value = producto.fecha_vencimiento || '';
         document.getElementById('precio').value = producto.precio;
         document.getElementById('stock').value = producto.stock_actual || 0;
+        document.getElementById('fechaVencimiento').value = producto.fecha_vencimiento || '';
+        
+        // Deshabilitar todos los campos excepto el código
+        this.deshabilitarCamposFormulario();
+    }
+
+    // Función para deshabilitar campos del formulario
+    deshabilitarCamposFormulario() {
+        const campos = ['nombre', 'categoria', 'detalle', 'precio', 'stock', 'fechaVencimiento'];
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.disabled = true;
+            }
+        });
+    }
+    
+    // Función para habilitar campos del formulario
+    habilitarCamposFormulario() {
+        const campos = ['nombre', 'categoria', 'detalle', 'precio', 'stock', 'fechaVencimiento'];
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.disabled = false;
+            }
+        });
     }
 
     // Función para mostrar mensaje de producto existente
@@ -905,9 +753,15 @@ class ProductoManager {
         
         mensajeDiv.innerHTML = `
             <strong>⚠️ Este producto ya existe en el stock</strong>
-            <p>Los campos se han completado automáticamente con la información actual del producto.</p>
+            <p>Los campos se han completado automáticamente. Presiona "Editar Producto" para modificar los datos.</p>
         `;
         mensajeDiv.style.display = 'block';
+        
+        // Mostrar el botón de editar
+        const btnEditar = document.getElementById('btnEditarProducto');
+        if (btnEditar) {
+            btnEditar.style.display = 'inline-block';
+        }
     }
 
     // Función para ocultar mensaje de producto existente
@@ -916,6 +770,14 @@ class ProductoManager {
         if (mensajeDiv) {
             mensajeDiv.style.display = 'none';
         }
+        
+        // Ocultar el botón de editar y habilitar campos
+        const btnEditar = document.getElementById('btnEditarProducto');
+        if (btnEditar) {
+            btnEditar.style.display = 'none';
+        }
+        
+        this.habilitarCamposFormulario();
     }
 
     // Función para deshabilitar el botón de agregar producto
@@ -943,107 +805,112 @@ class ProductoManager {
     // Función para limpiar el formulario (bonus)
     limpiarFormularioProducto() {
         document.getElementById('productoForm').reset();
-        formValidator.resetearValidaciones(); // Resetear todas las validaciones
         this.habilitarBotonAgregar();
         this.ocultarMensajeProductoExistente();
+        this.habilitarCamposFormulario();
         
-        // Enfocar el primer campo
-        const primerCampo = document.getElementById('categoria');
+        // Enfocar el primer campo (ahora es el código)
+        const primerCampo = document.getElementById('codigo');
         if (primerCampo) {
             primerCampo.focus();
         }
     }
 
-    // Nueva función para configurar validación en tiempo real
-    setupValidacionTiempoReal() {
-        // Validación del nombre
-        const inputNombre = document.getElementById('nombre');
-        if (inputNombre) {
-            inputNombre.addEventListener('input', (e) => {
-                formValidator.validarNombre(e.target.value);
-            });
-        }
-
-        // Validación del detalle
-        const inputDetalle = document.getElementById('detalle');
-        if (inputDetalle) {
-            inputDetalle.addEventListener('input', (e) => {
-                formValidator.validarDetalle(e.target.value);
-            });
-        }
-    }
-
-    // Nueva función para configurar validación en tiempo real del modal de edición
-    setupValidacionTiempoRealEdit() {
-        // Validación del nombre en edición
-        const inputEditNombre = document.getElementById('editNombre');
-        if (inputEditNombre) {
-            inputEditNombre.addEventListener('input', (e) => {
-                formValidator.validarNombre(e.target.value, true);
-            });
-        }
-
-        // Validación del código en edición
-        const inputEditCodigo = document.getElementById('editCodigo');
-        if (inputEditCodigo) {
-            inputEditCodigo.addEventListener('input', (e) => {
-                formValidator.validarCodigo(e.target.value, true);
-            });
-        }
-
-        // Validación del detalle en edición
-        const inputEditDetalle = document.getElementById('editDetalle');
-        if (inputEditDetalle) {
-            inputEditDetalle.addEventListener('input', (e) => {
-                formValidator.validarDetalle(e.target.value, true);
-            });
-        }
-    }
-
     async agregarProducto() {
         try {
+            // Validaciones mejoradas
+            const codigo = document.getElementById('codigo').value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const precio = parseFloat(document.getElementById('precio').value);
+            const stock = parseInt(document.getElementById('stock').value);
+            
+            if (!codigo || !nombre) {
+                toastManager.error('El código y nombre son obligatorios');
+                return;
+            }
+            
+            if (precio <= 0) {
+                toastManager.error('El precio debe ser mayor a 0');
+                return;
+            }
+            
+            if (stock < 0) {
+                toastManager.error('El stock no puede ser negativo');
+                return;
+            }
+            
+            // Mostrar loading state
+            const submitButton = document.querySelector('#productoForm button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Agregando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const producto = {
-                nombre: document.getElementById('nombre').value,
-                codigo: document.getElementById('codigo').value,
+                nombre: nombre,
+                codigo: codigo,
                 categoria_id: parseInt(document.getElementById('categoria').value),
-                precio: parseFloat(document.getElementById('precio').value),
-                detalle: document.getElementById('detalle').value,
-                fecha_vencimiento: document.getElementById('fechaVencimiento').value,
-                stock_minimo: 0
+                precio: precio,
+                detalle: document.getElementById('detalle').value.trim(),
+                stock_minimo: 0,
+                fecha_vencimiento: document.getElementById('fechaVencimiento').value || null
             };
 
-            await api.post('/productos', producto);
+            // Crear el producto y obtener la respuesta con el ID
+            const responseProducto = await api.post('/productos', producto);
+            const productoId = responseProducto.id || responseProducto.producto?.id;
             
-            // Registrar stock inicial
+            // Registrar stock inicial si es necesario
             const stockInicial = parseInt(document.getElementById('stock').value);
-            if (stockInicial > 0) {
-                // Primero obtener el producto recién creado para obtener su ID
-                await this.cargarProductos();
-                const productoCreado = this.productos.find(p => p.codigo === producto.codigo);
-                if (productoCreado) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: productoCreado.id,
-                        cantidad: stockInicial
-                    });
-                }
+            if (stockInicial > 0 && productoId) {
+                await api.post('/movimientos/entrada', {
+                    producto_id: productoId,
+                    cantidad: stockInicial
+                });
             }
 
+            // Limpiar formulario inmediatamente para mejor UX
             document.getElementById('productoForm').reset();
-            formValidator.resetearValidaciones(); // Resetear validaciones
-            await this.cargarProductos();
-            this.actualizarTablas();
             toastManager.success('Producto agregado exitosamente');
+            
+            // Recargar datos en segundo plano (una sola vez)
+            this.cargarProductos().then(() => {
+                this.actualizarTablas();
+            }).catch(error => {
+                console.warn('Error al actualizar tabla después de agregar producto:', error);
+            });
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al agregar producto:', error);
             toastManager.error('Error al agregar producto: ' + error.message);
+            
+            // Restaurar botón en caso de error
+            const submitButton = document.querySelector('#productoForm button[type="submit"]');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Agregar Producto';
+            submitButton.style.cursor = '';
         }
     }
 
     async eliminarProducto(id) {
-        if (confirm('¿Está seguro de que desea eliminar este producto?')) {
+        const producto = this.productos.find(p => p.id === id);
+        const nombreProducto = producto ? producto.nombre : 'este producto';
+        
+        if (confirm(`¿Está seguro de que desea eliminar "${nombreProducto}"?\n\nEsta acción no se puede deshacer.`)) {
             try {
+                // Eliminar del servidor
                 await api.delete(`/productos/${id}`);
-                await this.cargarProductos();
+                
+                // Mostrar mensaje de éxito inmediatamente
+                toastManager.success(`Producto "${nombreProducto}" eliminado exitosamente`);
+                
+                // Eliminar localmente para UX inmediato
+                this.productos = this.productos.filter(p => p.id !== id);
                 
                 // Si estamos en modo búsqueda, actualizar los productos filtrados
                 if (this.modosBusqueda) {
@@ -1058,10 +925,16 @@ class ProductoManager {
                     this.actualizarTablas();
                 }
                 
-                toastManager.success('Producto eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
                 toastManager.error('Error al eliminar producto: ' + error.message);
+                
+                // En caso de error, recargar datos para sincronizar
+                this.cargarProductos().then(() => {
+                    this.actualizarTablas();
+                }).catch(err => {
+                    console.warn('Error al recargar datos después del error:', err);
+                });
             }
         }
     }
@@ -1069,25 +942,41 @@ class ProductoManager {
     abrirEditar(id) {
         const producto = this.productos.find(p => p.id === id);
         if (producto) {
-            // Resetear validaciones antes de abrir el modal
-            formValidator.resetearValidacionesEdit();
             document.getElementById('editId').value = producto.id;
             document.getElementById('editCategoria').value = producto.categoria_id;
             document.getElementById('editNombre').value = producto.nombre;
             document.getElementById('editCodigo').value = producto.codigo;
             document.getElementById('editDetalle').value = producto.detalle;
-            document.getElementById('editFechaVencimiento').value = producto.fecha_vencimiento || '';
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
-            document.getElementById('modalEditar').style.display = 'block';
             
-            // Almacenar el código original para referencia
-            formValidator.editCodigoOriginal = producto.codigo;
+            // Formatear fecha para el input de tipo date (YYYY-MM-DD)
+            let fechaFormateada = '';
+            if (producto.fecha_vencimiento) {
+                try {
+                    const fecha = new Date(producto.fecha_vencimiento);
+                    if (!isNaN(fecha.getTime())) {
+                        fechaFormateada = fecha.toISOString().split('T')[0];
+                    }
+                } catch (error) {
+                    console.warn('Error al formatear fecha de vencimiento:', error);
+                }
+            }
+            document.getElementById('editFechaVencimiento').value = fechaFormateada;
+            
+            document.getElementById('modalEditar').style.display = 'block';
         }
     }
 
     async guardarEdicion() {
         try {
+            // Mostrar loading state
+            const submitButton = document.querySelector('#editarForm button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Guardando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const id = parseInt(document.getElementById('editId').value);
             const producto = {
                 nombre: document.getElementById('editNombre').value,
@@ -1095,10 +984,11 @@ class ProductoManager {
                 categoria_id: parseInt(document.getElementById('editCategoria').value),
                 precio: parseFloat(document.getElementById('editPrecio').value),
                 detalle: document.getElementById('editDetalle').value,
-                fecha_vencimiento: document.getElementById('editFechaVencimiento').value,
-                stock_minimo: 0
+                stock_minimo: 0,
+                fecha_vencimiento: document.getElementById('editFechaVencimiento').value || null
             };
 
+            // Actualizar producto en el servidor
             await api.put(`/productos/${id}`, producto);
             
             // Actualizar stock si es necesario
@@ -1120,441 +1010,54 @@ class ProductoManager {
                 }
             }
 
-            await this.cargarProductos();
+            // Actualizar localmente para UX inmediato
+            const productoLocal = this.productos.find(p => p.id === id);
+            if (productoLocal) {
+                Object.assign(productoLocal, {
+                    ...producto,
+                    stock_actual: nuevoStock
+                });
+            }
             
             // Si estamos en modo búsqueda, actualizar el producto en los filtrados
             if (this.modosBusqueda) {
-                const productoActualizado = this.productos.find(p => p.id === id);
-                if (productoActualizado) {
-                    const index = this.productosFiltrados.findIndex(p => p.id === id);
-                    if (index !== -1) {
-                        this.productosFiltrados[index] = productoActualizado;
-                    }
+                const index = this.productosFiltrados.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    Object.assign(this.productosFiltrados[index], {
+                        ...producto,
+                        stock_actual: nuevoStock
+                    });
                 }
             }
             
-            this.actualizarTablas();
+            // Cerrar modal y mostrar mensaje inmediatamente
             document.getElementById('modalEditar').style.display = 'none';
             toastManager.success('Producto actualizado exitosamente');
+            
+            // Actualizar tabla inmediatamente
+            this.actualizarTablas();
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al actualizar producto:', error);
             toastManager.error('Error al actualizar producto: ' + error.message);
-        }
-    }
-
-    actualizarTablas() {
-        // Determinar qué productos usar (todos o filtrados)
-        const productosAUsar = this.modosBusqueda ? this.productosFiltrados : this.productos;
-        const totalProductos = productosAUsar.length;
-        const totalPaginas = Math.ceil(totalProductos / this.productosPorPagina);
-        
-        // Calcular el rango de productos para la página actual
-        const inicio = (this.paginaActual - 1) * this.productosPorPagina;
-        const fin = inicio + this.productosPorPagina;
-        const productosPagina = productosAUsar.slice(inicio, fin);
-        
-        // Actualizar controles de paginación (ocultar si estamos en modo búsqueda con un solo producto)
-        if (this.modosBusqueda && totalProductos === 1) {
-            document.getElementById('pagination-controls').style.display = 'none';
-        } else {
-            document.getElementById('pagination-controls').style.display = 'block';
-            this.actualizarControlesPaginacion(totalProductos, totalPaginas, inicio, fin);
-        }
-        
-        // Si estamos en modo búsqueda, mostrar solo una tabla unificada
-        if (this.modosBusqueda) {
-            this.renderizarTablaBusqueda(productosPagina);
-        } else {
-            // Modo normal: agrupar por categorías
-            this.renderizarTablasPorCategoria(productosPagina);
-        }
-    }
-
-    // Nueva función para renderizar tabla de búsqueda
-    renderizarTablaBusqueda(productos) {
-        const stockTablesContainer = document.getElementById('stock-tables');
-        if (!stockTablesContainer) return;
-
-        if (productos.length === 0) {
-            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
-            return;
-        }
-
-        const tabla = `
-            <div class="search-results">
-                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Categoría</th>
-                                <th>Detalle</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productos.map(p => `
-                                <tr>
-                                    <td><strong>${p.codigo}</strong></td>
-                                    <td>${p.nombre}</td>
-                                    <td><span class="categoria-badge">${p.categoria}</span></td>
-                                    <td>${p.detalle}</td>
-                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                    <td>
-                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        stockTablesContainer.innerHTML = tabla;
-    }
-
-    // Nueva función para renderizar tablas por categoría (modo normal)
-    renderizarTablasPorCategoria(productosPagina) {
-        // Agrupar productos de la página actual por categoría
-        const productosPorCategoria = {};
-        this.categorias.forEach(categoria => {
-            productosPorCategoria[categoria.nombre] = [];
-        });
-        
-        productosPagina.forEach(producto => {
-            if (productosPorCategoria[producto.categoria]) {
-                productosPorCategoria[producto.categoria].push(producto);
-            }
-        });
-        
-        // Renderizar las tablas solo con los productos de la página actual
-        this.categorias.forEach(categoria => {
-            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
-            const tabla = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Detalle</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productosFiltrados.map(p => `
-                            <tr>
-                                <td>${p.codigo}</td>
-                                <td>${p.nombre}</td>
-                                <td>${p.detalle}</td>
-                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                <td>
-                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            // Buscar el elemento por el nombre de la categoría
-            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
-            if (tablaElement) {
-                tablaElement.innerHTML = 
-                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
-            }
-        });
-    }
-
-    // Nueva función para renderizar tabla de búsqueda
-    renderizarTablaBusqueda(productos) {
-        const stockTablesContainer = document.getElementById('stock-tables');
-        if (!stockTablesContainer) return;
-
-        if (productos.length === 0) {
-            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
-            return;
-        }
-
-        const tabla = `
-            <div class="search-results">
-                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Categoría</th>
-                                <th>Detalle</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productos.map(p => `
-                                <tr>
-                                    <td><strong>${p.codigo}</strong></td>
-                                    <td>${p.nombre}</td>
-                                    <td><span class="categoria-badge">${p.categoria}</span></td>
-                                    <td>${p.detalle}</td>
-                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                    <td>
-                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-
-        stockTablesContainer.innerHTML = tabla;
-    }
-
-    // Nueva función para renderizar tablas por categoría (modo normal)
-    renderizarTablasPorCategoria(productosPagina) {
-        // Agrupar productos de la página actual por categoría
-        const productosPorCategoria = {};
-        this.categorias.forEach(categoria => {
-            productosPorCategoria[categoria.nombre] = [];
-        });
-        
-        productosPagina.forEach(producto => {
-            if (productosPorCategoria[producto.categoria]) {
-                productosPorCategoria[producto.categoria].push(producto);
-            }
-        });
-        
-        // Renderizar las tablas solo con los productos de la página actual
-        this.categorias.forEach(categoria => {
-            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
-            const tabla = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Detalle</th>
-                            <th>Precio</th>
-                            <th>Stock</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productosFiltrados.map(p => `
-                            <tr>
-                                <td>${p.codigo}</td>
-                                <td>${p.nombre}</td>
-                                <td>${p.detalle}</td>
-                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
-                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
-                                <td>
-                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
-                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            // Buscar el elemento por el nombre de la categoría
-            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
-            if (tablaElement) {
-                tablaElement.innerHTML = 
-                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
-            }
-        });
-    }
-
-    // Función para limpiar la búsqueda y mostrar todos los productos
-    limpiarBusqueda() {
-        this.productosFiltrados = [];
-        this.modosBusqueda = false;
-        this.paginaActual = 1;
-        this.ocultarMensajeBusqueda();
-        document.getElementById('busquedaCodigo').value = '';
-        
-        // Restaurar la estructura de categorías antes de actualizar tablas
-        this.generarSeccionesCategorias();
-        this.actualizarTablas();
-        
-        // Enfocar el input de búsqueda
-        setTimeout(() => {
-            document.getElementById('busquedaCodigo').focus();
-        }, 100);
-    }
-
-    // Función para mostrar mensajes de búsqueda
-    mostrarMensajeBusqueda(mensaje, tipo) {
-        const mensajeDiv = document.getElementById('mensajeBusqueda');
-        if (mensajeDiv) {
-            mensajeDiv.textContent = mensaje;
-            mensajeDiv.className = `search-message ${tipo}`;
-            mensajeDiv.style.display = 'block';
             
-            // Ocultar el mensaje después de 3 segundos si es de éxito
-            if (tipo === 'success') {
-                setTimeout(() => {
-                    this.ocultarMensajeBusqueda();
-                }, 3000);
-            }
-        }
-    }
-
-    // Función para ocultar mensajes de búsqueda
-    ocultarMensajeBusqueda() {
-        const mensajeDiv = document.getElementById('mensajeBusqueda');
-        if (mensajeDiv) {
-            mensajeDiv.style.display = 'none';
-        }
-    }
-
-    async agregarProducto() {
-        try {
-            const producto = {
-                nombre: document.getElementById('nombre').value,
-                codigo: document.getElementById('codigo').value,
-                categoria_id: parseInt(document.getElementById('categoria').value),
-                precio: parseFloat(document.getElementById('precio').value),
-                detalle: document.getElementById('detalle').value,
-                stock_minimo: 0
-            };
-
-            await api.post('/productos', producto);
+            // En caso de error, recargar datos para sincronizar
+            this.cargarProductos().then(() => {
+                this.actualizarTablas();
+            }).catch(err => {
+                console.warn('Error al recargar datos después del error:', err);
+            });
             
-            // Registrar stock inicial
-            const stockInicial = parseInt(document.getElementById('stock').value);
-            if (stockInicial > 0) {
-                // Primero obtener el producto recién creado para obtener su ID
-                await this.cargarProductos();
-                const productoCreado = this.productos.find(p => p.codigo === producto.codigo);
-                if (productoCreado) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: productoCreado.id,
-                        cantidad: stockInicial
-                    });
-                }
-            }
-
-            document.getElementById('productoForm').reset();
-            await this.cargarProductos();
-            this.actualizarTablas();
-            toastManager.success('Producto agregado exitosamente');
-        } catch (error) {
-            console.error('Error al agregar producto:', error);
-            toastManager.error('Error al agregar producto: ' + error.message);
-        }
-    }
-
-    async eliminarProducto(id) {
-        if (confirm('¿Está seguro de que desea eliminar este producto?')) {
-            try {
-                await api.delete(`/productos/${id}`);
-                await this.cargarProductos();
-                
-                // Si estamos en modo búsqueda, actualizar los productos filtrados
-                if (this.modosBusqueda) {
-                    this.productosFiltrados = this.productosFiltrados.filter(p => p.id !== id);
-                    if (this.productosFiltrados.length === 0) {
-                        // Si no quedan productos filtrados, volver al modo normal
-                        this.limpiarBusqueda();
-                    } else {
-                        this.actualizarTablas();
-                    }
-                } else {
-                    this.actualizarTablas();
-                }
-                
-                toastManager.success('Producto eliminado exitosamente');
-            } catch (error) {
-                console.error('Error al eliminar producto:', error);
-                toastManager.error('Error al eliminar producto: ' + error.message);
-            }
-        }
-    }
-
-    abrirEditar(id) {
-        const producto = this.productos.find(p => p.id === id);
-        if (producto) {
-            document.getElementById('editId').value = producto.id;
-            document.getElementById('editCategoria').value = producto.categoria_id;
-            document.getElementById('editNombre').value = producto.nombre;
-            document.getElementById('editCodigo').value = producto.codigo;
-            document.getElementById('editDetalle').value = producto.detalle;
-            document.getElementById('editPrecio').value = producto.precio;
-            document.getElementById('editStock').value = producto.stock_actual;
-            document.getElementById('modalEditar').style.display = 'block';
-        }
-    }
-
-    async guardarEdicion() {
-        try {
-            const id = parseInt(document.getElementById('editId').value);
-            const producto = {
-                nombre: document.getElementById('editNombre').value,
-                codigo: document.getElementById('editCodigo').value,
-                categoria_id: parseInt(document.getElementById('editCategoria').value),
-                precio: parseFloat(document.getElementById('editPrecio').value),
-                detalle: document.getElementById('editDetalle').value,
-                stock_minimo: 0
-            };
-
-            await api.put(`/productos/${id}`, producto);
-            
-            // Actualizar stock si es necesario
-            const stockActual = this.productos.find(p => p.id === id)?.stock_actual || 0;
-            const nuevoStock = parseInt(document.getElementById('editStock').value);
-            
-            if (nuevoStock !== stockActual) {
-                const diferencia = nuevoStock - stockActual;
-                if (diferencia > 0) {
-                    await api.post('/movimientos/entrada', {
-                        producto_id: id,
-                        cantidad: diferencia
-                    });
-                } else if (diferencia < 0) {
-                    await api.post('/movimientos/salida', {
-                        producto_id: id,
-                        cantidad: Math.abs(diferencia)
-                    });
-                }
-            }
-
-            await this.cargarProductos();
-            
-            // Si estamos en modo búsqueda, actualizar el producto en los filtrados
-            if (this.modosBusqueda) {
-                const productoActualizado = this.productos.find(p => p.id === id);
-                if (productoActualizado) {
-                    const index = this.productosFiltrados.findIndex(p => p.id === id);
-                    if (index !== -1) {
-                        this.productosFiltrados[index] = productoActualizado;
-                    }
-                }
-            }
-            
-            this.actualizarTablas();
-            document.getElementById('modalEditar').style.display = 'none';
-            toastManager.success('Producto actualizado exitosamente');
-        } catch (error) {
-            console.error('Error al actualizar producto:', error);
-            toastManager.error('Error al actualizar producto: ' + error.message);
+            // Restaurar botón en caso de error
+            const submitButton = document.querySelector('#editarForm button[type="submit"]');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Guardar Cambios';
+            submitButton.style.cursor = '';
         }
     }
 
@@ -1683,6 +1186,116 @@ class ProductoManager {
             // Scroll suave hacia arriba
             document.getElementById('stockSection').scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    // Nueva función para renderizar tabla de búsqueda
+    renderizarTablaBusqueda(productos) {
+        const stockTablesContainer = document.getElementById('stock-tables');
+        if (!stockTablesContainer) return;
+
+        if (productos.length === 0) {
+            stockTablesContainer.innerHTML = '<div class="no-results"><h3>Producto no encontrado</h3><p>No se encontró ningún producto con ese código.</p></div>';
+            return;
+        }
+
+        const tabla = `
+            <div class="search-results">
+                <h3>Resultado de búsqueda (${productos.length} producto${productos.length > 1 ? 's' : ''})</h3>
+                <div class="tabla-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Detalle</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Vencimiento</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productos.map(p => `
+                                <tr>
+                                    <td><strong>${p.codigo}</strong></td>
+                                    <td>${p.nombre}</td>
+                                    <td><span class="categoria-badge">${p.categoria}</span></td>
+                                    <td>${p.detalle}</td>
+                                    <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
+                                    <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                    <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                    <td>
+                                        <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
+                                        <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        stockTablesContainer.innerHTML = tabla;
+    }
+
+    // Nueva función para renderizar tablas por categoría (modo normal)
+    renderizarTablasPorCategoria(productosPagina) {
+        // Agrupar productos de la página actual por categoría
+        const productosPorCategoria = {};
+        this.categorias.forEach(categoria => {
+            productosPorCategoria[categoria.nombre] = [];
+        });
+        
+        productosPagina.forEach(producto => {
+            if (productosPorCategoria[producto.categoria]) {
+                productosPorCategoria[producto.categoria].push(producto);
+            }
+        });
+        
+        // Renderizar las tablas solo con los productos de la página actual
+        this.categorias.forEach(categoria => {
+            const productosFiltrados = productosPorCategoria[categoria.nombre] || [];
+            const tabla = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Detalle</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Vencimiento</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productosFiltrados.map(p => `
+                            <tr>
+                                <td>${p.codigo}</td>
+                                <td>${p.nombre}</td>
+                                <td>${p.detalle}</td>
+                                <td>$${parseFloat(p.precio || 0).toFixed(2)}</td>
+                                <td class="${(p.stock_actual || 0) < 5 ? 'stock-bajo' : ''}">${p.stock_actual || 0}</td>
+                                <td>${p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : 'Sin Fecha'}</td>
+                                <td>
+                                    <button class="btn-editar" onclick="productoManager.abrirEditar(${p.id})">Editar</button>
+                                    <button class="btn-eliminar" onclick="productoManager.eliminarProducto(${p.id})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Buscar el elemento por el nombre de la categoría
+            const tablaElement = document.getElementById(`tabla${categoria.nombre}`);
+            if (tablaElement) {
+                tablaElement.innerHTML = 
+                    productosFiltrados.length ? tabla : '<p>No hay productos en esta categoría en esta página</p>';
+            }
+        });
     }
 }
 
@@ -1813,31 +1426,76 @@ class VentaManager {
         }
 
         try {
+            // Mostrar loading state
+            const submitButton = document.getElementById('confirmarVenta');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Procesando...';
+            submitButton.style.cursor = 'not-allowed';
+            
             const productos = this.ventaActual.map(item => ({
                 producto_id: item.id,
                 cantidad: item.cantidad
             }));
 
+            // Procesar la venta en el servidor
             await api.post('/ventas', { productos });
 
+            // Actualizar stock local inmediatamente para UX más rápido
+            this.ventaActual.forEach(item => {
+                const producto = this.productoManager.productos.find(p => p.id === item.id);
+                if (producto) {
+                    producto.stock_actual = Math.max(0, producto.stock_actual - item.cantidad);
+                }
+                
+                // Si estamos en modo búsqueda, también actualizar el producto filtrado
+                if (this.productoManager.modosBusqueda) {
+                    const productoFiltrado = this.productoManager.productosFiltrados.find(p => p.id === item.id);
+                    if (productoFiltrado) {
+                        productoFiltrado.stock_actual = Math.max(0, productoFiltrado.stock_actual - item.cantidad);
+                    }
+                }
+            });
+
+            // Limpiar la venta actual y mostrar mensaje inmediatamente
             this.ventaActual = [];
             this.actualizarTablaVenta();
-            await this.productoManager.cargarProductos();
-            this.productoManager.actualizarTablas();
-
             toastManager.success('Venta realizada con éxito');
+
+            // Actualizar tablas inmediatamente con los datos locales actualizados
+            this.productoManager.actualizarTablas();
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
+            
         } catch (error) {
             console.error('Error al procesar venta:', error);
             toastManager.error('Error al procesar venta: ' + error.message);
+            
+            // En caso de error, recargar datos para sincronizar
+            this.productoManager.cargarProductos().then(() => {
+                this.productoManager.actualizarTablas();
+            }).catch(err => {
+                console.warn('Error al recargar datos después del error:', err);
+            });
+            
+            // Restaurar botón en caso de error
+            const submitButton = document.getElementById('confirmarVenta');
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            submitButton.style.cursor = '';
         }
     }
 }
 
 // Inicialización
 const productoManager = new ProductoManager();
-const ventaManager = productoManager.ventaManager;
 
 // Exponer al ámbito global
 window.productoManager = productoManager;
-window.ventaManager = ventaManager;
-window.formValidator = formValidator;
+window.ventaManager = productoManager.ventaManager;
+
+// Funciones globales para compatibilidad con HTML onclick
+window.limpiarFormularioProducto = () => productoManager.limpiarFormularioProducto();

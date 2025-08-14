@@ -59,6 +59,10 @@
             <h2>Agregar Nuevo Producto</h2>
             <form id="productoForm">
                 <div class="form-group">
+                    <label for="codigo">Código:</label>
+                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
+                </div>
+                <div class="form-group">
                     <label for="categoria">Categoría:</label>
                     <select id="categoria" required>
                         <!-- Las opciones se cargarán dinámicamente desde la API -->
@@ -67,21 +71,10 @@
                 <div class="form-group">
                     <label for="nombre">Nombre:</label>
                     <input type="text" id="nombre" required>
-                    <div id="mensajeNombre" class="validation-message" style="display: none;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="codigo">Código:</label>
-                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
-                    <div id="mensajeCodigo" class="validation-message" style="display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label for="detalle">Detalle:</label>
-                    <textarea id="detalle" placeholder="Ej: 500 g, 1 L, 250 ml, 1 kg, 12 un" required></textarea>
-                    <div id="mensajeDetalle" class="validation-message" style="display: none;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="fechaVencimiento">Fecha de Vencimiento:</label>
-                    <input type="date" id="fechaVencimiento" required>
+                    <textarea id="detalle" required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="precio">Precio:</label>
@@ -91,8 +84,13 @@
                     <label for="stock">Cantidad en Stock:</label>
                     <input type="number" id="stock" required>
                 </div>
+                <div class="form-group">
+                    <label for="fechaVencimiento">Fecha de Vencimiento:</label>
+                    <input type="date" id="fechaVencimiento" min="1900-01-01" max="9999-12-31">
+                </div>
                 <button type="submit" class="btn-primary">Agregar Producto</button>
-                <button type="button" class="btn-secondary" onclick="productoManager.limpiarFormularioProducto()">Limpiar Formulario</button>
+                <button type="button" class="btn-secondary" onclick="limpiarFormularioProducto()">Limpiar Formulario</button>
+                <button type="button" id="btnEditarProducto" class="btn-warning" style="display: none;">Editar Producto</button>
             </form>
         </section>
 
@@ -123,11 +121,11 @@
                         <span id="pagination-text">Mostrando productos 1 a 50 de 17000</span>
                     </div>
                     <div class="pagination-buttons">
-                        <button id="btn-anterior" class="btn-pagination" onclick="productoManager.cambiarPagina(-1)">← Anterior</button>
+                        <button id="btn-anterior" class="btn-pagination">← Anterior</button>
                         <div id="pagination-numbers" class="pagination-numbers">
                             <!-- Los números de página se generarán dinámicamente -->
                         </div>
-                        <button id="btn-siguiente" class="btn-pagination" onclick="productoManager.cambiarPagina(1)">Siguiente →</button>
+                        <button id="btn-siguiente" class="btn-pagination">Siguiente →</button>
                     </div>
                     <div class="pagination-summary">
                         <span id="page-indicator">Página 1 de 340</span>
@@ -153,21 +151,14 @@
                 <div class="form-group">
                     <label for="editNombre">Nombre:</label>
                     <input type="text" id="editNombre" required>
-                    <div id="mensajeEditNombre" class="validation-message" style="display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label for="editCodigo">Código:</label>
                     <input type="text" id="editCodigo" placeholder="Código único del producto" required>
-                    <div id="mensajeEditCodigo" class="validation-message" style="display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label for="editDetalle">Detalle:</label>
-                    <textarea id="editDetalle" placeholder="Ej: 500 g, 1 L, 250 ml, 1 kg, 12 un" required></textarea>
-                    <div id="mensajeEditDetalle" class="validation-message" style="display: none;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="editFechaVencimiento">Fecha de Vencimiento:</label>
-                    <input type="date" id="editFechaVencimiento" required>
+                    <textarea id="editDetalle" required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="editPrecio">Precio:</label>
@@ -176,6 +167,10 @@
                 <div class="form-group">
                     <label for="editStock">Cantidad en Stock:</label>
                     <input type="number" id="editStock" required>
+                </div>
+                <div class="form-group">
+                    <label for="editFechaVencimiento">Fecha de Vencimiento:</label>
+                    <input type="date" id="editFechaVencimiento" min="1900-01-01" max="9999-12-31">
                 </div>
                 <button type="submit" class="btn-primary">Guardar Cambios</button>
             </form>
