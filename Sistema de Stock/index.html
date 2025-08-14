@@ -59,6 +59,10 @@
             <h2>Agregar Nuevo Producto</h2>
             <form id="productoForm">
                 <div class="form-group">
+                    <label for="codigo">Código:</label>
+                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
+                </div>
+                <div class="form-group">
                     <label for="categoria">Categoría:</label>
                     <select id="categoria" required>
                         <!-- Las opciones se cargarán dinámicamente desde la API -->
@@ -67,10 +71,6 @@
                 <div class="form-group">
                     <label for="nombre">Nombre:</label>
                     <input type="text" id="nombre" required>
-                </div>
-                <div class="form-group">
-                    <label for="codigo">Código:</label>
-                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
                 </div>
                 <div class="form-group">
                     <label for="detalle">Detalle:</label>
@@ -90,6 +90,7 @@
                 </div>
                 <button type="submit" class="btn-primary">Agregar Producto</button>
                 <button type="button" class="btn-secondary" onclick="limpiarFormularioProducto()">Limpiar Formulario</button>
+                <button type="button" id="btnEditarProducto" class="btn-warning" style="display: none;">Editar Producto</button>
             </form>
         </section>
 
@@ -142,6 +143,10 @@
             <form id="editarForm">
                 <input type="hidden" id="editId">
                 <div class="form-group">
+                    <label for="editCodigo">Código:</label>
+                    <input type="text" id="editCodigo" placeholder="Código único del producto" required>
+                </div>
+                <div class="form-group">
                     <label for="editCategoria">Categoría:</label>
                     <select id="editCategoria" required>
                         <!-- Las opciones se cargarán dinámicamente desde la API -->
@@ -150,10 +155,6 @@
                 <div class="form-group">
                     <label for="editNombre">Nombre:</label>
                     <input type="text" id="editNombre" required>
-                </div>
-                <div class="form-group">
-                    <label for="editCodigo">Código:</label>
-                    <input type="text" id="editCodigo" placeholder="Código único del producto" required>
                 </div>
                 <div class="form-group">
                     <label for="editDetalle">Detalle:</label>
@@ -168,7 +169,7 @@
                     <input type="number" id="editStock" required>
                 </div>
                 <div class="form-group">
-                    <label for="editFechaVencimiento">Fecha de Vencimiento (DD/MM/YYYY):</label>
+                    <label for="editFechaVencimiento">Fecha de Vencimiento:</label>
                     <input type="text" id="editFechaVencimiento" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}">
                 </div>
                 <button type="submit" class="btn-primary">Guardar Cambios</button>

@@ -14,6 +14,7 @@ const PING_URL = API_BASE_URL.replace('/api', '/ping');
 console.log('🔗 API URL:', API_BASE_URL);
 console.log('📡 Ping URL:', PING_URL);
 
+
 // ===== FUNCIÓN PARA FORMATEAR FECHAS EN FORMATO ARGENTINO =====
 function formatearFechaArgentina(fechaStr) {
     if (!fechaStr) return 'Sin Fecha';
@@ -557,6 +558,8 @@ class ProductoManager {
             document.getElementById('modalEditar').style.display = 'none';
         });
 
+
+
         // Configurar scanner para búsqueda en stock
         const inputBusqueda = document.getElementById('busquedaCodigo');
         if (inputBusqueda) {
@@ -587,6 +590,23 @@ class ProductoManager {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     this.verificarYAutocompletarProducto(inputCodigo.value.trim());
+                }
+            });
+            
+            // También verificar cuando el usuario sale del campo (blur)
+            inputCodigo.addEventListener('blur', () => {
+                this.verificarYAutocompletarProducto(inputCodigo.value.trim());
+            });
+        }
+
+        // Event listener para el botón de editar producto
+        const btnEditarProducto = document.getElementById('btnEditarProducto');
+        if (btnEditarProducto) {
+            btnEditarProducto.addEventListener('click', () => {
+                const codigo = document.getElementById('codigo').value.trim();
+                const producto = this.productos.find(p => p.codigo === codigo);
+                if (producto) {
+                    this.abrirEditar(producto.id);
                 }
             });
         }
@@ -770,6 +790,31 @@ class ProductoManager {
         document.getElementById('precio').value = producto.precio;
         document.getElementById('stock').value = producto.stock_actual || 0;
         document.getElementById('fechaVencimiento').value = producto.fecha_vencimiento || '';
+        
+        // Deshabilitar todos los campos excepto el código
+        this.deshabilitarCamposFormulario();
+    }
+
+    // Función para deshabilitar campos del formulario
+    deshabilitarCamposFormulario() {
+        const campos = ['nombre', 'categoria', 'detalle', 'precio', 'stock', 'fechaVencimiento'];
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.disabled = true;
+            }
+        });
+    }
+    
+    // Función para habilitar campos del formulario
+    habilitarCamposFormulario() {
+        const campos = ['nombre', 'categoria', 'detalle', 'precio', 'stock', 'fechaVencimiento'];
+        campos.forEach(campo => {
+            const elemento = document.getElementById(campo);
+            if (elemento) {
+                elemento.disabled = false;
+            }
+        });
     }
 
     // Función para mostrar mensaje de producto existente
@@ -788,9 +833,15 @@ class ProductoManager {
         
         mensajeDiv.innerHTML = `
             <strong>⚠️ Este producto ya existe en el stock</strong>
-            <p>Los campos se han completado automáticamente con la información actual del producto.</p>
+            <p>Los campos se han completado automáticamente. Presiona "Editar Producto" para modificar los datos.</p>
         `;
         mensajeDiv.style.display = 'block';
+        
+        // Mostrar el botón de editar
+        const btnEditar = document.getElementById('btnEditarProducto');
+        if (btnEditar) {
+            btnEditar.style.display = 'inline-block';
+        }
     }
 
     // Función para ocultar mensaje de producto existente
@@ -799,6 +850,14 @@ class ProductoManager {
         if (mensajeDiv) {
             mensajeDiv.style.display = 'none';
         }
+        
+        // Ocultar el botón de editar y habilitar campos
+        const btnEditar = document.getElementById('btnEditarProducto');
+        if (btnEditar) {
+            btnEditar.style.display = 'none';
+        }
+        
+        this.habilitarCamposFormulario();
     }
 
     // Función para deshabilitar el botón de agregar producto
@@ -828,9 +887,10 @@ class ProductoManager {
         document.getElementById('productoForm').reset();
         this.habilitarBotonAgregar();
         this.ocultarMensajeProductoExistente();
+        this.habilitarCamposFormulario();
         
-        // Enfocar el primer campo
-        const primerCampo = document.getElementById('categoria');
+        // Enfocar el primer campo (ahora es el código)
+        const primerCampo = document.getElementById('codigo');
         if (primerCampo) {
             primerCampo.focus();
         }
@@ -969,8 +1029,8 @@ class ProductoManager {
             document.getElementById('editDetalle').value = producto.detalle;
             document.getElementById('editPrecio').value = producto.precio;
             document.getElementById('editStock').value = producto.stock_actual;
-
-            // Formatear fecha para mostrar en formato argentino DD/MM/YYYY
+            
+            // Formatear fecha para el input de tipo date (YYYY-MM-DD)
             let fechaFormateada = '';
             if (producto.fecha_vencimiento) {
                 fechaFormateada = formatearFechaArgentina(producto.fecha_vencimiento);
@@ -995,11 +1055,10 @@ class ProductoManager {
             submitButton.style.cursor = 'not-allowed';
             
             const id = parseInt(document.getElementById('editId').value);
-            
-            // Convertir fecha de formato argentino (DD/MM/YYYY) a ISO (YYYY-MM-DD)
+
             const fechaArgentina = document.getElementById('editFechaVencimiento').value;
             const fechaISO = convertirFechaArgentinaAISO(fechaArgentina);
-            
+
             const producto = {
                 nombre: document.getElementById('editNombre').value,
                 codigo: document.getElementById('editCodigo').value,
