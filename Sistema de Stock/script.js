@@ -656,11 +656,13 @@ class ProductoManager {
                 }
             }, 100);
         } else if (view === 'agregar') {
-            // Enfocar el primer campo del formulario
+            // Enfocar el campo de código del producto en lugar de categoría
             setTimeout(() => {
-                const inputCategoria = document.getElementById('categoria');
-                if (inputCategoria) {
-                    inputCategoria.focus();
+                const inputCodigo = document.getElementById('codigo');
+                if (inputCodigo) {
+                    inputCodigo.focus();
+                    inputCodigo.select(); // Seleccionar todo el texto si hay alguno
+                    scannerManager.setContext('add-product');
                 }
             }, 100);
         } else if (view === 'ventas') {

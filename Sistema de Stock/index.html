@@ -58,15 +58,16 @@
         <section id="agregarSection" class="content-section" style="display: none;">
             <h2>Agregar Nuevo Producto</h2>
             <form id="productoForm">
-                <div class="form-group">
-                    <label for="codigo">Código:</label>
-                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
-                </div>
+                
                 <div class="form-group">
                     <label for="categoria">Categoría:</label>
                     <select id="categoria" required>
                         <!-- Las opciones se cargarán dinámicamente desde la API -->
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="codigo">Código:</label>
+                    <input type="text" id="codigo" data-scanner-input="true" placeholder="Código único del producto" required>
                 </div>
                 <div class="form-group">
                     <label for="nombre">Nombre:</label>
